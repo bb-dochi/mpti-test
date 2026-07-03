@@ -154,23 +154,32 @@ function Result() {
                         title: shareTitle,
                         description: shareText,
                         imageUrl: imageUrl,
-                        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+                        link: {
+                            mobileWebUrl: `${window.location.origin}/result?c=${finalResult}`,
+                            webUrl: `${window.location.origin}/result?c=${finalResult}`,
+                        },
                     },
                     buttons: [
                         {
                             title: "결과 확인하기 ♟️",
-                            link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
+                            link: {
+                                mobileWebUrl: `${window.location.origin}/result?c=${finalResult}`,
+                                webUrl: `${window.location.origin}/result?c=${finalResult}`,
+                            },
                         },
                         {
                             title: "나도 테스트하기 🎲",
-                            link: { mobileWebUrl: window.location.origin, webUrl: window.location.origin },
+                            link: {
+                                mobileWebUrl: window.location.origin,
+                                webUrl: window.location.origin,
+                            },
                         },
                     ],
                 });
                 await incrementShareCount();
                 return;
             } catch (error) {
-                console.error(error);
+                console.error("카카오 발송 실패:", error);
             }
         }
         handleCopyResultLink();
