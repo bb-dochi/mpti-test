@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { questions } from "../data/questions";
 
 function Test() {
     const navigate = useNavigate();
+
+    const [shuffledQuestions, setShuffledQuestions] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const [scores, setScores] = useState({
@@ -14,27 +16,60 @@ function Test() {
         tags: [],
     });
 
-    const handleOptionClick = (type, value) => {
+    useEffect(() => {
+        const normalQuestions = questions.filter((q) => q.type !== "tag");
+        const tagQuestions = questions.filter((q) => q.type === "tag");
+
+        const shuffledNormal = [...normalQuestions];
+        for (let i = shuffledNormal.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledNormal[i], shuffledNormal[j]] = [shuffledNormal[j], shuffledNormal[i]];
+        }
+
+        setShuffledQuestions([...shuffledNormal, ...tagQuestions]);
+    }, []);
+
+    if (shuffledQuestions.length === 0) {
+        return <div style={{ textAlign: "center", marginTop: "50px", fontWeight: "bold" }}>[SYSTEM] 퀘스트 카드를 섞는 중...</div>;
+    }
+
+    const currentQuestion = shuffledQuestions[currentIndex];
+
+    const handleOptionClick = (type, value, optionIndex) => {
+        let extraTags = [];
         if (type === "tag") {
-            setScores((prev) => ({ ...prev, tags: [...prev.tags, value] }));
+            setScores((prev) => ({
+                ...prev,
+                tags: [...prev.tags, value, ...extraTags],
+            }));
         } else {
             setScores((prev) => ({
                 ...prev,
                 [type]: { ...prev[type], [value]: prev[type][value] + 1 },
+                tags: extraTags.length > 0 ? [...prev.tags, ...extraTags] : prev.tags,
             }));
         }
 
-        if (currentIndex < questions.length - 1) {
+        // 다음 스테이지로 이동 또는 결과 창 진입
+        if (currentIndex < shuffledQuestions.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
-            navigate("/result", { state: { scores } });
+            // 주의: 바로 scores를 넘기면 비동기 업데이트 전 상태가 갈 수 있으므로 최신 상태를 복사해서 전달
+            const finalScores = {
+                ...scores,
+                tags: extraTags.length > 0 ? [...scores.tags, ...extraTags] : scores.tags,
+            };
+            if (type === "tag") {
+                finalScores.tags = [...scores.tags, value, ...extraTags];
+            } else {
+                finalScores[type] = { ...scores[type], [value]: scores[type][value] + 1 };
+            }
+            navigate("/result", { state: { scores: finalScores } });
         }
     };
 
-    const currentQuestion = questions[currentIndex];
-    // 진행률을 계산하여 몇 번째 칸에 서 있는지 표현 (총 10칸 짜리 트랙으로 축약 표현)
     const trackLength = 10;
-    const currentPosition = Math.floor((currentIndex / questions.length) * trackLength);
+    const currentPosition = Math.floor((currentIndex / shuffledQuestions.length) * trackLength);
 
     return (
         <div
@@ -52,7 +87,7 @@ function Test() {
                 <div
                     style={{
                         display: "flex",
-                        justifyContent: "space-between",
+                        justifyContent: "between",
                         backgroundColor: "#111",
                         padding: "10px",
                         border: "4px solid #111",
@@ -137,7 +172,7 @@ function Test() {
                     {currentQuestion.options.map((option, index) => (
                         <button
                             key={index}
-                            onClick={() => handleOptionClick(currentQuestion.type, option.value)}
+                            onClick={() => handleOptionClick(currentQuestion.type, option.value, index)}
                             style={{
                                 padding: "20px",
                                 fontSize: "1.0rem",

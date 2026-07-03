@@ -10,13 +10,20 @@
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://bg-mpti-test.vercel.app/" />
         <meta property="og:title" content="MPTI - 보드게임 성향 테스트" />
-        <meta property="og:description" content="[시스템] 당신의 보드게임 자아를 분석합니다. 테스트 시작하기" />
+        <meta property="og:description" content="당신의 보드게임 자아를 분석합니다. 테스트 시작하기" />
         <meta property="og:image" content="https://bg-mpti-test.vercel.app/thumbnail.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="MPTI - 보드게임 성향 테스트" />
-        <meta name="twitter:description" content="[시스템] 당신의 보드게임 자아를 분석합니다. 테스트 시작하기" />
+        <meta name="twitter:description" content="당신의 보드게임 자아를 분석합니다. 테스트 시작하기" />
         <meta name="twitter:image" content="https://bg-mpti-test.vercel.app/thumbnail.png" />
+
+        <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+        <script>
+            if (typeof Kakao !== "undefined" && !Kakao.isInitialized()) {
+                Kakao.init("%VITE_KAKAO_JAVASCRIPT_KEY%");
+            }
+        </script>
     </head>
     <body>
         <div id="root"></div>
