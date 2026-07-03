@@ -155,33 +155,35 @@ function Result() {
                         description: shareText,
                         imageUrl: imageUrl,
                         link: {
-                            mobileWebUrl: `${window.location.origin}/result?c=${finalResult}`,
-                            webUrl: `${window.location.origin}/result?c=${finalResult}`,
+                            mobileWebUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
+                            webUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
                         },
                     },
                     buttons: [
                         {
                             title: "결과 확인하기 ♟️",
                             link: {
-                                mobileWebUrl: `${window.location.origin}/result?c=${finalResult}`,
-                                webUrl: `${window.location.origin}/result?c=${finalResult}`,
+                                mobileWebUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
+                                webUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
                             },
                         },
                         {
                             title: "나도 테스트하기 🎲",
                             link: {
-                                mobileWebUrl: window.location.origin,
-                                webUrl: window.location.origin,
+                                mobileWebUrl: `https://bg-mpti-test.vercel.app`,
+                                webUrl: `https://bg-mpti-test.vercel.app`,
                             },
                         },
                     ],
                 });
+                console.log("url:", window.location.origin, shareUrl);
                 await incrementShareCount();
                 return;
             } catch (error) {
                 console.error("카카오 발송 실패:", error);
             }
         }
+        console.log("url:", window.location.origin, shareUrl);
         handleCopyResultLink();
     };
 
