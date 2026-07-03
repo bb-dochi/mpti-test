@@ -271,22 +271,24 @@ function Result() {
 
                 {/* 획득 칭호 */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px", justifyContent: "center" }}>
-                    {displayTags.map((tag, index) => (
-                        <span
-                            key={index}
-                            style={{
-                                backgroundColor: "#111",
-                                color: "#fff",
-                                padding: "6px 12px",
-                                border: "2px solid #111",
-                                fontWeight: "bold",
-                                fontSize: "0.9rem",
-                                fontFamily: "'Maplestory-Light', sans-serif",
-                            }}
-                        >
-                            {tag}
-                        </span>
-                    ))}
+                    {displayTags
+                        .filter((tag) => tag && tag.trim() !== "")
+                        .map((tag, index) => (
+                            <span
+                                key={index}
+                                style={{
+                                    backgroundColor: "#111",
+                                    color: "#fff",
+                                    padding: "6px 12px",
+                                    border: "2px solid #111",
+                                    fontWeight: "bold",
+                                    fontSize: "0.9rem",
+                                    fontFamily: "'Maplestory-Light', sans-serif",
+                                }}
+                            >
+                                {tag}
+                            </span>
+                        ))}
                 </div>
 
                 <div style={{ height: "3px", backgroundColor: "#111", margin: "20px 0", borderBottom: "2px dashed #ccc" }}></div>
