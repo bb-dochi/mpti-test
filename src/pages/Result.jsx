@@ -15,7 +15,6 @@ function Result() {
     const [displayTags, setDisplayTags] = useState([]);
 
     const scores = location.state?.scores;
-    const hasRecorded = useRef(false);
 
     // 1. 진입 경로 분기 (공유 링크 진입 vs 일반 테스트 완료 진입)
     useEffect(() => {
@@ -56,38 +55,6 @@ function Result() {
             setDisplayTags(scores.tags || []);
         }
     }, [scores, searchParams]);
-
-    // 2. 파이어베이스 통계 데이터 전송 (직접 테스트 친 유저만 누적)
-    useEffect(() => {
-        if (hasRecorded.current || !finalResult || !scores) return;
-        hasRecorded.current = true;
-
-        const saveStatistics = async () => {
-            try {
-                const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
-                const statsRef = doc(db, "statistics", docName);
-                const updateData = {
-                    totalTesters: increment(1),
-                    [`types.${finalResult}`]: increment(1),
-                };
-
-                if (scores.tags && scores.tags.length > 0) {
-                    scores.tags.forEach((tag) => {
-                        if (tag) {
-                            updateData[`extraQuestions.${tag}`] = increment(1);
-                        }
-                    });
-                }
-
-                await setDoc(statsRef, updateData, { merge: true });
-                console.log(`🔥 [${docName}] 파이어베이스 통계 누적 성공!`);
-            } catch (error) {
-                console.error("파이어베이스 저장 에러:", error);
-            }
-        };
-
-        saveStatistics();
-    }, [finalResult, scores]);
 
     if (!character && !scores && !searchParams.get("c")) {
         return (

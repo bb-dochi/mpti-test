@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { questions } from "../data/questions";
 
+import { doc, setDoc, increment } from "firebase/firestore";
+import { db } from "../firebase";
+
 function Test() {
     const navigate = useNavigate();
 
@@ -74,6 +77,33 @@ function Test() {
             const interaction = i.P > i.C ? "P" : "C";
             const focus = f.T > f.S ? "T" : "S";
             const finalResult = `${weight}${decision}${interaction}${focus}`.trim();
+
+            const saveStatistics = async () => {
+                try {
+                    const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
+                    const statsRef = doc(db, "statistics", docName);
+                    const updateData = {
+                        totalTesters: increment(1),
+                        [`types.${finalResult}`]: increment(1),
+                    };
+
+                    if (finalScores.tags && finalScores.tags.length > 0) {
+                        finalScores.tags.forEach((tag) => {
+                            if (tag) {
+                                updateData[`extraQuestions.${tag}`] = increment(1);
+                            }
+                        });
+                    }
+
+                    await setDoc(statsRef, updateData, { merge: true });
+                    console.log(`🔥 [${docName}] 테스트 완료 시점에 최초 1회 저장 성공!`);
+                } catch (error) {
+                    console.error("파이어베이스 저장 에러:", error);
+                }
+            };
+
+            // 데이터 저장을 비동기로 실행하면서 화면을 즉시 이동시킵니다. (UX 손맛 유지)
+            saveStatistics();
 
             // 쿼리 파라미터(?c=) 뒤에 finalResult를 안전하게 매립하여 이동
             navigate(`/result?c=${finalResult}`, { state: { scores: finalScores } });
