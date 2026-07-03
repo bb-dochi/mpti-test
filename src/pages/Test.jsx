@@ -37,6 +37,7 @@ function Test() {
 
     const handleOptionClick = (type, value, optionIndex) => {
         let extraTags = [];
+
         if (type === "tag") {
             setScores((prev) => ({
                 ...prev,
@@ -54,16 +55,27 @@ function Test() {
         if (currentIndex < shuffledQuestions.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
-            // 주의: 바로 scores를 넘기면 비동기 업데이트 전 상태가 갈 수 있으므로 최신 상태를 복사해서 전달
+            // 최신 점수 상태를 즉시 계산하여 최종 결과 도출
             const finalScores = {
                 ...scores,
                 tags: extraTags.length > 0 ? [...scores.tags, ...extraTags] : scores.tags,
             };
+
             if (type === "tag") {
                 finalScores.tags = [...scores.tags, value, ...extraTags];
             } else {
                 finalScores[type] = { ...scores[type], [value]: scores[type][value] + 1 };
             }
+
+            // 📌 [핵심 수정] 마지막 순간에 MPTI 알파벳 조합 생성
+            const { weight: w, decision: d, interaction: i, focus: f } = finalScores;
+            const weight = w.L > w.H ? "L" : "H";
+            const decision = d.I > d.A ? "I" : "A";
+            const interaction = i.P > i.C ? "P" : "C";
+            const focus = f.T > f.S ? "T" : "S";
+            const finalResult = `${weight}${decision}${interaction}${focus}`.trim();
+
+            // 쿼리 파라미터(?c=) 뒤에 finalResult를 안전하게 매립하여 이동
             navigate(`/result?c=${finalResult}`, { state: { scores: finalScores } });
         }
     };
@@ -87,7 +99,7 @@ function Test() {
                 <div
                     style={{
                         display: "flex",
-                        justifyContent: "between",
+                        justifyContent: "space-between",
                         backgroundColor: "#111",
                         padding: "10px",
                         border: "4px solid #111",
