@@ -95,46 +95,80 @@ function Test() {
             }}
         >
             <div style={{ maxWidth: "500px", width: "100%", marginTop: "20px" }}>
-                {/* 보드게임 진행 트랙 UI */}
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        backgroundColor: "#111",
-                        padding: "10px",
-                        border: "4px solid #111",
-                        borderRadius: "10px",
-                        marginBottom: "30px",
-                    }}
-                >
-                    {Array.from({ length: trackLength }).map((_, idx) => (
-                        <div
-                            key={idx}
-                            style={{
-                                width: "30px",
-                                height: "30px",
-                                backgroundColor: idx === currentPosition ? "#f1c40f" : "#fff",
-                                border: "2px solid #555",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "1.2rem",
-                            }}
-                        >
-                            {idx === currentPosition ? "♟️" : ""}
-                        </div>
-                    ))}
+                <div style={{ width: "100%", marginBottom: "35px" }}>
+                    {/* 상단 퀘스트 카운터 스테이터스 */}
                     <div
                         style={{
-                            color: "#fff",
-                            fontWeight: "bold",
                             display: "flex",
-                            alignItems: "center",
-                            marginLeft: "10px",
+                            justifyContent: "flex-end",
+                            marginBottom: "8px",
                             fontFamily: "'Maplestory-Light', sans-serif",
+                            fontSize: "0.95rem",
+                            fontWeight: "bold",
+                            color: "#111",
+                            padding: "0 4px",
                         }}
                     >
-                        GOAL
+                        <span>
+                            {currentIndex + 1} / {shuffledQuestions.length}
+                        </span>
+                    </div>
+
+                    {/* 실제 말판 트랙 메인 카드 */}
+                    <div
+                        style={{
+                            position: "relative",
+                            height: "24px",
+                            backgroundColor: "#fff",
+                            border: "4px solid #111",
+                            borderRadius: "8px",
+                            boxShadow: "4px 4px 0px #111",
+                            display: "flex",
+                            alignItems: "center",
+                            overflow: "visible", // 말이 위로 살짝 튀어나오도록 노출
+                        }}
+                    >
+                        {/* 진행도에 따라 나무판이나 매트가 차오르는 느낌의 내부 바 */}
+                        <div
+                            style={{
+                                width: `${(currentIndex / (shuffledQuestions.length - 1)) * 100}%`,
+                                height: "100%",
+                                backgroundColor: "#f1c40f", // 매력적인 골드 게이지색
+                                transition: "width 0.25s ease-out", // 부드러운 애니메이션 효과
+                            }}
+                        />
+
+                        {/* 실시간으로 전진하는 미플 말 (♟️) */}
+                        <div
+                            style={{
+                                position: "absolute",
+                                // 말의 중심축을 맞추기 위해 비율 계산 후 패딩 보정
+                                left: `calc(${(currentIndex / (shuffledQuestions.length - 1)) * 100}% - 14px)`,
+                                top: "-12px",
+                                fontSize: "1.6rem",
+                                transition: "left 0.25s ease-out", // 말 이동도 부드럽게 쇽!
+                                zIndex: 2,
+                                cursor: "default",
+                                userSelect: "none",
+                            }}
+                        >
+                            ♟️
+                        </div>
+
+                        {/* 우측 끝 고정 골인 지점 텍스트 */}
+                        <span
+                            style={{
+                                position: "absolute",
+                                right: "12px",
+                                fontSize: "0.75rem",
+                                fontWeight: "900",
+                                color: "#111",
+                                fontFamily: "'Maplestory-Light', sans-serif",
+                                zIndex: 1,
+                            }}
+                        >
+                            GOAL
+                        </span>
                     </div>
                 </div>
 

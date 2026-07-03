@@ -104,12 +104,10 @@ function Result() {
         return <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "'Maplestory-Light', sans-serif", fontWeight: "bold" }}>[SYSTEM] 보드게임 성향 결과 로드 중...</div>;
     }
 
-    // 🔗 주소 정의 (현재 페이지의 동적 결과 주소 활용)
     const shareUrl = `${window.location.origin}/result?c=${finalResult}`;
     const shareTitle = "MPTI - 보드게임 성향 테스트";
-    const shareText = `[시스템] 나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
+    const shareText = `나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
 
-    // ⭐ 아까 요청하신 대로 썸네일도 유저 결과 미플 이미지로 전동 연동!
     const imageUrl = `${window.location.origin}/images/${finalResult}.png`;
 
     const incrementShareCount = async () => {
@@ -126,7 +124,7 @@ function Result() {
     const handleCopyMainLink = async () => {
         try {
             await navigator.clipboard.writeText(window.location.origin);
-            alert("[시스템] 테스트 메인 주소가 클립보드에 복사되었습니다! 친구들에게 추천해 보세요.");
+            alert("테스트 메인 주소가 클립보드에 복사되었습니다! 친구들에게 추천해 보세요.");
             await incrementShareCount();
         } catch (error) {
             alert("링크 복사에 실패했습니다.");
@@ -136,7 +134,7 @@ function Result() {
     const handleCopyResultLink = async () => {
         try {
             await navigator.clipboard.writeText(shareUrl);
-            alert("[SYSTEM] 현재 보시는 결과 페이지 링크가 클립보드에 복사되었습니다!");
+            alert("결과 페이지 링크가 클립보드에 복사되었습니다!");
             await incrementShareCount();
         } catch (error) {
             alert("링크 복사에 실패했습니다.");
@@ -154,36 +152,21 @@ function Result() {
                         title: shareTitle,
                         description: shareText,
                         imageUrl: imageUrl,
-                        link: {
-                            mobileWebUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
-                            webUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
-                        },
+                        link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
                     },
                     buttons: [
                         {
                             title: "결과 확인하기 ♟️",
-                            link: {
-                                mobileWebUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
-                                webUrl: `https://bg-mpti-test.vercel.app/result?c=${finalResult}`,
-                            },
-                        },
-                        {
-                            title: "나도 테스트하기 🎲",
-                            link: {
-                                mobileWebUrl: `https://bg-mpti-test.vercel.app`,
-                                webUrl: `https://bg-mpti-test.vercel.app`,
-                            },
+                            link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
                         },
                     ],
                 });
-                console.log("url:", window.location.origin, shareUrl);
                 await incrementShareCount();
                 return;
             } catch (error) {
-                console.error("카카오 발송 실패:", error);
+                console.error(error);
             }
         }
-        console.log("url:", window.location.origin, shareUrl);
         handleCopyResultLink();
     };
 
