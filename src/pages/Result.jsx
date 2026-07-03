@@ -21,7 +21,7 @@ function Result() {
     useEffect(() => {
         const charIdFromUrl = searchParams.get("c");
 
-        // 상황 A: 공유 링크(?c=MPTI네글자)로 직접 접속했을 때
+        // 상황 A: 공유 링크(?c=MPTI네글자)로 직접 접속했거나 주소창에 이미 박혀있는 경우
         if (charIdFromUrl) {
             const cleanId = charIdFromUrl.trim().toUpperCase();
             const foundCharacter = characters[cleanId];
@@ -33,7 +33,7 @@ function Result() {
             }
         }
 
-        // 상황 B: 일반 테스트 프로세스를 거쳐 정상 진입했을 때
+        // 상황 B: 일반 테스트 프로세스를 거쳐 정상 진입했을 때 (만약 파라미터가 누락되었을 때의 백업)
         if (scores) {
             const { weight: w, decision: d, interaction: i, focus: f } = scores;
             const weight = w.L > w.H ? "L" : "H";
@@ -57,7 +57,7 @@ function Result() {
         }
     }, [scores, searchParams]);
 
-    // 2. 페이지가 열릴 때 딱 한 번 파이어베이스에 데이터 전송하기 (직접 테스트 친 유저만 누적)
+    // 2. 파이어베이스 통계 데이터 전송 (직접 테스트 친 유저만 누적)
     useEffect(() => {
         if (hasRecorded.current || !finalResult || !scores) return;
         hasRecorded.current = true;
@@ -89,21 +89,11 @@ function Result() {
         saveStatistics();
     }, [finalResult, scores]);
 
-    // 예외 방어벽
     if (!character && !scores && !searchParams.get("c")) {
         return (
             <div style={{ textAlign: "center", marginTop: "50px" }}>
                 <p style={{ fontWeight: "bold" }}>[ERROR] 데이터를 불러올 수 없습니다.</p>
-                <button
-                    onClick={() => navigate("/")}
-                    style={{
-                        padding: "10px 20px",
-                        cursor: "pointer",
-                        border: "3px solid #111",
-                        fontWeight: "bold",
-                        fontFamily: "'Maplestory-Light', sans-serif",
-                    }}
-                >
+                <button onClick={() => navigate("/")} style={{ padding: "10px 20px", cursor: "pointer", border: "3px solid #111", fontWeight: "bold" }}>
                     메인으로 복귀
                 </button>
             </div>
@@ -114,47 +104,45 @@ function Result() {
         return <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "'Maplestory-Light', sans-serif", fontWeight: "bold" }}>[SYSTEM] 보드게임 성향 결과 로드 중...</div>;
     }
 
-    // 🔗 주소 정의 (고유 결과 주소 및 메인 주소)
+    // 🔗 주소 정의 (현재 페이지의 동적 결과 주소 활용)
     const shareUrl = `${window.location.origin}/result?c=${finalResult}`;
     const shareTitle = "MPTI - 보드게임 성향 테스트";
-    const shareText = `나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
-    const imageUrl = `${window.location.origin}/thumbnail.png`;
+    const shareText = `[시스템] 나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
 
-    // 1. 공유 카운트 누적 함수
+    // ⭐ 아까 요청하신 대로 썸네일도 유저 결과 미플 이미지로 전동 연동!
+    const imageUrl = `${window.location.origin}/images/${finalResult}.png`;
+
     const incrementShareCount = async () => {
         try {
             const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
             const statsRef = doc(db, "statistics", docName);
             await setDoc(statsRef, { shareCount: increment(1) }, { merge: true });
-            console.log("📈 파이어베이스 공유 카운트 +1 완료");
         } catch (error) {
-            console.error("공유 카운트 누적 실패:", error);
+            console.error(error);
         }
     };
 
-    // 2. 테스트 메인 링크 복사 기능 (항상 메인 홈 주소만 복사)
+    // 테스트 메인 링크 복사 기능 (언제나 메인 주소만 깔끔하게 복사)
     const handleCopyMainLink = async () => {
         try {
             await navigator.clipboard.writeText(window.location.origin);
-            alert("테스트 주소가 클립보드에 복사되었습니다! 친구들에게 추천해 보세요.");
-            await incrementShareCount();
-        } catch (error) {
-            alert("링크 복사에 실패했습니다. 주소창의 URL을 직접 복사해 주세요.");
-        }
-    };
-
-    // 3. 결과 고유 주소 링크 복사 기능 (모바일 외 환경용 데스크톱 백업 로직)
-    const handleCopyResultLink = async () => {
-        try {
-            await navigator.clipboard.writeText(shareUrl);
-            alert("결과 페이지 링크가 클립보드에 복사되었습니다!");
+            alert("[시스템] 테스트 메인 주소가 클립보드에 복사되었습니다! 친구들에게 추천해 보세요.");
             await incrementShareCount();
         } catch (error) {
             alert("링크 복사에 실패했습니다.");
         }
     };
 
-    // 4. 결과 공유하기 (모바일 카카오톡 피드 연동)
+    const handleCopyResultLink = async () => {
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            alert("[SYSTEM] 현재 보시는 결과 페이지 링크가 클립보드에 복사되었습니다!");
+            await incrementShareCount();
+        } catch (error) {
+            alert("링크 복사에 실패했습니다.");
+        }
+    };
+
     const handleShareResult = async () => {
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
@@ -182,10 +170,9 @@ function Result() {
                 await incrementShareCount();
                 return;
             } catch (error) {
-                console.error("카카오 공유 실패, 링크 복사로 전환:", error);
+                console.error(error);
             }
         }
-        // PC 환경이나 카톡이 불가능할 경우 결과 고유 주소 복사로 대응
         handleCopyResultLink();
     };
 
@@ -354,7 +341,7 @@ function Result() {
                 </div>
             </div>
 
-            {/* 1️⃣ 결과 공유하기 버튼 (현재 결과의 ?c= 고유주소가 전송됨) */}
+            {/* 버튼 1: 결과 공유하기 */}
             <button
                 onClick={handleShareResult}
                 style={{
@@ -374,7 +361,7 @@ function Result() {
                 결과 공유하기 🔗
             </button>
 
-            {/* 2️⃣ 테스트 링크 복사 버튼 (언제나 메인 홈 주소 복사) */}
+            {/* 버튼 2: 테스트 링크 복사 (홈페이지 메인 카피) */}
             <button
                 onClick={handleCopyMainLink}
                 style={{
@@ -395,7 +382,7 @@ function Result() {
                 테스트 링크 복사 📋
             </button>
 
-            {/* 3️⃣ 나도 테스트하기 / 다시하기 통합 버튼 */}
+            {/* 버튼 3: 다시 테스트하기 */}
             <button
                 onClick={() => navigate("/")}
                 style={{
@@ -424,7 +411,7 @@ function Result() {
                     e.currentTarget.style.boxShadow = "6px 6px 0px #111";
                 }}
             >
-                나도 테스트하기 🎲
+                다시 테스트하기 🔄
             </button>
         </div>
     );

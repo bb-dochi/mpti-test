@@ -64,7 +64,7 @@ function Test() {
             } else {
                 finalScores[type] = { ...scores[type], [value]: scores[type][value] + 1 };
             }
-            navigate("/result", { state: { scores: finalScores } });
+            navigate(`/result?c=${finalResult}`, { state: { scores: finalScores } });
         }
     };
 
