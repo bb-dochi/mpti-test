@@ -28,16 +28,30 @@ function AllTypes() {
             }}
         >
             <div style={{ maxWidth: "500px", width: "100%", textAlign: "center" }}>
-                {/* 상단 타이틀 영역 */}
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", marginBottom: "30px" }}>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginBottom: "30px",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        padding: "0 10px",
+                        flexWrap: "wrap",
+                    }}
+                >
                     <h1
                         style={{
-                            fontSize: "1.8rem",
+                            // 📌 핵심 패치: 화면이 좁아지면 폰트 크기가 최대 1.1rem까지 자연스럽게 줄어듦
+                            fontSize: "clamp(1.1rem, 5vw, 1.6rem)",
                             fontWeight: "900",
                             color: "#fff",
-                            textShadow: "3px 3px 0px #111",
+                            textShadow: "2px 2px 0px #111", // 그림자도 살짝 줄여서 삐져나감 방지
                             margin: 0,
                             fontFamily: "'Maplestory-Light', sans-serif",
+                            wordBreak: "keep-all", // nowrap 대신 단어 단위로 깔끔하게 묶어줌
+                            textAlign: "center",
                         }}
                     >
                         📜 보드게이머(미플) 유형 도감
@@ -48,8 +62,11 @@ function AllTypes() {
                             backgroundColor: "#f1c40f",
                             border: "3px solid #111",
                             borderRadius: "50%",
-                            width: "32px", // 가로 고정
-                            height: "32px", // 세로 고정
+                            width: "32px",
+                            height: "32px",
+                            minWidth: "32px",
+                            minHeight: "32px",
+                            flexShrink: 0, // 📌 핵심 패치: 공간이 부족해도 절대 쪼그라들거나 밀리지 않음
                             cursor: "pointer",
                             fontWeight: "900",
                             fontSize: "1.1rem",
@@ -59,6 +76,10 @@ function AllTypes() {
                             boxShadow: "2px 2px 0px #111",
                             fontFamily: "'Maplestory-Light', sans-serif",
                             padding: 0,
+
+                            color: "#111",
+                            WebkitTextFillColor: "#111",
+                            textDecoration: "none",
                         }}
                     >
                         ?
@@ -151,21 +172,22 @@ function AllTypes() {
                 </button>
             </div>
 
-            {/* 🛑 [이스터에그] 4대 성향 지표 팝업창 모달 */}
+            {/* 🛑 [이스터에그] 4대 성향 지표 팝업창 모달 (모바일 창 잘림 완벽 패치 버전) */}
             {showGuide && (
                 <div
                     style={{
                         position: "fixed",
                         top: 0,
                         left: 0,
-                        width: "100%",
-                        height: "100%",
+                        right: 0, // 📌 width: "100%" 대신 꽉 채우기
+                        bottom: 0, // 📌 height: "100%" 대신 꽉 채우기
                         backgroundColor: "rgba(0,0,0,0.6)",
                         zIndex: 999,
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         padding: "20px",
+                        boxSizing: "border-box", // 📌 여백이 화면을 초과하지 않게 강제
                     }}
                 >
                     <div
@@ -175,9 +197,10 @@ function AllTypes() {
                             padding: "25px 20px",
                             maxWidth: "450px",
                             width: "100%",
+                            boxSizing: "border-box", // 📌 핵심 패치: 테두리(5px)와 패딩(20px)이 너비 100% 안으로 계산되어 절대 안 잘림!
                             maxHeight: "80vh",
                             overflowY: "auto",
-                            boxShadow: "8px 8px 0px rgba(0,0,0,0.5)",
+                            boxShadow: "4px 4px 0px rgba(0,0,0,0.5)", // 📌 그림자도 모바일에서 덜 짤리게 살짝 줄임
                             position: "relative",
                             textAlign: "left",
                             fontFamily: "'Maplestory-Light', sans-serif",
