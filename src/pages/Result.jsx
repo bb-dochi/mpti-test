@@ -137,6 +137,32 @@ function Result() {
         handleCopyResultLink();
     };
 
+    const parseMatchData = (text) => {
+        if (!text) return { id: "unknown", name: "?", desc: "" };
+
+        // \s* 를 활용해 콤마 뒤에 띄어쓰기가 있든 없든 다 잡아내도록 설계
+        const match = text.match(/^([a-zA-Z]{4})\s*\(([^)]+)\)\s*,\s*(.*)$/);
+
+        if (match) {
+            return {
+                id: match[1].toUpperCase(),
+                name: match[2].trim(),
+                desc: match[3].trim(),
+            };
+        }
+
+        // 안전장치(Fallback)
+        const parts = text.split(",");
+        return {
+            id: "unknown",
+            name: parts[0] || text,
+            desc: parts.slice(1).join(",").trim() || "",
+        };
+    };
+
+    const good = parseMatchData(character.goodMatch);
+    const bad = parseMatchData(character.badMatch);
+
     return (
         <div
             style={{
@@ -291,19 +317,136 @@ function Result() {
                     <p style={{ margin: 0, lineHeight: "1.6", fontWeight: "bold", color: "#333", fontSize: "0.95rem" }}>{character.description}</p>
                 </div>
 
-                {/* 궁합 영역 */}
-                <div style={{ backgroundColor: "#f4f1ea", border: "3px solid #111", padding: "15px" }}>
-                    <div style={{ marginBottom: "10px" }}>
-                        <span style={{ fontWeight: "bold", color: "#27ae60" }}>🟢 찰떡 파티원 : </span>
-                        <span style={{ fontWeight: "bold" }}>{character.goodMatch}</span>
+                {/* 궁합 영역 (좌우 유지 + 이미지 네모 상자 꽉 채우기) */}
+                <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+                    {/* 🟢 찰떡 파티원 */}
+                    <div
+                        style={{
+                            flex: 1,
+                            backgroundColor: "#f4f1ea",
+                            border: "3px solid #111",
+                            padding: "12px 8px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center",
+                        }}
+                    >
+                        <span style={{ fontWeight: "900", color: "#27ae60", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>🟢 찰떡 파티원</span>
+
+                        {/* 네모난 미니 카드 상자 */}
+                        <div
+                            style={{
+                                width: "85px",
+                                height: "85px",
+                                backgroundColor: "#fff",
+                                border: "2px solid #111",
+                                borderRadius: "6px",
+                                overflow: "hidden", // 넘치는 이미지 컷팅
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                marginBottom: "8px",
+                                boxShadow: "2px 2px 0px #111",
+                            }}
+                        >
+                            <img
+                                src={`/images/${good.id}.png`}
+                                alt={good.name}
+                                style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover", // 📌 비율 유지하며 빈틈없이 네모 박스 꽉 채우기 (잘림 허용)
+                                }}
+                                onError={(e) => {
+                                    e.target.style.display = "none";
+                                    e.target.parentNode.innerHTML = "🤝";
+                                }}
+                            />
+                        </div>
+
+                        <strong style={{ fontSize: "0.95rem", color: "#111", wordBreak: "keep-all" }}>{good.name}</strong>
+                        <span style={{ fontSize: "0.7rem", backgroundColor: "#27ae60", color: "#fff", padding: "1px 5px", borderRadius: "4px", marginBottom: "8px", fontWeight: "bold" }}>
+                            {good.id}
+                        </span>
+
+                        <p style={{ margin: 0, fontSize: "0.75rem", color: "#444", lineHeight: "1.35", wordBreak: "keep-all" }}>{good.desc}</p>
                     </div>
-                    <div>
-                        <span style={{ fontWeight: "bold", color: "#c0392b" }}>🔴 상극 파티원 : </span>
-                        <span style={{ fontWeight: "bold" }}>{character.badMatch}</span>
+
+                    {/* 🔴 상극 파티원 */}
+                    <div
+                        style={{
+                            flex: 1,
+                            backgroundColor: "#f4f1ea",
+                            border: "3px solid #111",
+                            padding: "12px 8px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center",
+                        }}
+                    >
+                        <span style={{ fontWeight: "900", color: "#c0392b", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>🔴 상극 파티원</span>
+
+                        {/* 네모난 미니 카드 상자 */}
+                        <div
+                            style={{
+                                width: "85px",
+                                height: "85px",
+                                backgroundColor: "#fff",
+                                border: "2px solid #111",
+                                borderRadius: "6px",
+                                overflow: "hidden", // 넘치는 이미지 컷팅
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                marginBottom: "8px",
+                                boxShadow: "2px 2px 0px #111",
+                            }}
+                        >
+                            <img
+                                src={`/images/${bad.id}.png`}
+                                alt={bad.name}
+                                style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover", // 📌 비율 유지하며 빈틈없이 네모 박스 꽉 채우기 (잘림 허용)
+                                }}
+                                onError={(e) => {
+                                    e.target.style.display = "none";
+                                    e.target.parentNode.innerHTML = "⚔️";
+                                }}
+                            />
+                        </div>
+
+                        <strong style={{ fontSize: "0.95rem", color: "#111", wordBreak: "keep-all" }}>{bad.name}</strong>
+                        <span style={{ fontSize: "0.7rem", backgroundColor: "#c0392b", color: "#fff", padding: "1px 5px", borderRadius: "4px", marginBottom: "8px", fontWeight: "bold" }}>
+                            {bad.id}
+                        </span>
+
+                        <p style={{ margin: 0, fontSize: "0.75rem", color: "#444", lineHeight: "1.35", wordBreak: "keep-all" }}>{bad.desc}</p>
                     </div>
                 </div>
             </div>
-
+            {/* 📜 [추가] 과하지 않고 힙한 감성의 전체 도감보기 텍스트 인디케이터 링크 */}
+            <div
+                onClick={() => navigate("/all")}
+                style={{
+                    fontSize: "0.95rem",
+                    fontWeight: "bold",
+                    color: "#fff",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    marginBottom: "25px", // 아래 공유하기 버튼과의 간격 조정
+                    fontFamily: "'Maplestory-Light', sans-serif",
+                    textShadow: "1px 1px 0px #111",
+                    letterSpacing: "0.5px",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#f1c40f")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#fff")}
+            >
+                [ 📜 모든 유형 살펴보기 ]
+            </div>
             {/* 버튼 1: 결과 공유하기 */}
             <button
                 onClick={handleShareResult}
