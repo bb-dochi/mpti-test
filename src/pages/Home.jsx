@@ -15,6 +15,9 @@ function Home() {
                 backgroundImage: "linear-gradient(#27ae60 2px, transparent 2px), linear-gradient(90deg, #27ae60 2px, transparent 2px)",
                 backgroundSize: "40px 40px", // 그리드 패턴
                 padding: "20px",
+                width: "100%",
+                overflowX: "hidden",
+                boxSizing: "border-box",
             }}
         >
             {/* 부루마블 중앙 로고 판 느낌의 박스 */}

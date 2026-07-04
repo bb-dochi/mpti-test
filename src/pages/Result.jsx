@@ -174,6 +174,9 @@ function Result() {
                 backgroundImage: "linear-gradient(#27ae60 2px, transparent 2px), linear-gradient(90deg, #27ae60 2px, transparent 2px)",
                 backgroundSize: "40px 40px",
                 padding: "40px 20px",
+                width: "100%",
+                overflowX: "hidden",
+                boxSizing: "border-box",
             }}
         >
             {/* 캐릭터 카드 UI */}
