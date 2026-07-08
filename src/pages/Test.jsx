@@ -4,6 +4,8 @@ import { questions } from "../data/questions";
 import { doc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
 
+import AdFitSmallBanner from "../components/AdFitSmallBanner";
+
 function Test() {
     const navigate = useNavigate();
 
@@ -288,7 +290,6 @@ function Test() {
                     ))}
                 </div>
 
-                {/* ↩️ 모바일 터치 최적화 뒤로 가기 트리거 */}
                 {currentIndex > 0 && (
                     <div style={{ display: "flex", marginTop: "10px" }}>
                         <div

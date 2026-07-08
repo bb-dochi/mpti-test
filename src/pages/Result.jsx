@@ -1,3 +1,4 @@
+import AdFitBanner from "../components/AdFitBanner";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { characters } from "../data/characters";
@@ -522,6 +523,7 @@ function Result() {
             >
                 다시 테스트하기 🔄
             </button>
+            <AdFitBanner />
         </div>
     );
 }
