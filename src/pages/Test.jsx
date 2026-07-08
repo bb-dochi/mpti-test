@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { questions } from "../data/questions";
-
 import { doc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -18,6 +17,19 @@ function Test() {
         focus: { T: 0, S: 0 },
         tags: [],
     });
+
+    const [history, setHistory] = useState([]);
+
+    const handleBack = () => {
+        if (currentIndex === 0) return;
+
+        setCurrentIndex((prev) => prev - 1);
+
+        // 뒤로 가기 시 직전 타임라인의 점수 스냅샷을 완벽히 복원
+        const previousScores = history[history.length - 1];
+        setScores(previousScores);
+        setHistory((prev) => prev.slice(0, -1));
+    };
 
     useEffect(() => {
         const normalQuestions = questions.filter((q) => q.type !== "tag");
@@ -39,8 +51,12 @@ function Test() {
     const currentQuestion = shuffledQuestions[currentIndex];
 
     const handleOptionClick = (type, value, optionIndex) => {
+        // 점수판이 바뀌기 직전 상태를 히스토리에 누적 (뒤로가기용)
+        setHistory((prev) => [...prev, scores]);
+
         let extraTags = [];
 
+        // 1~24번 일반 질문 및 25번 태그 질문 분기 점수 업데이트
         if (type === "tag") {
             setScores((prev) => ({
                 ...prev,
@@ -54,11 +70,11 @@ function Test() {
             }));
         }
 
-        // 다음 스테이지로 이동 또는 결과 창 진입
+        // 넥스트 페이지 체크 로직
         if (currentIndex < shuffledQuestions.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
-            // 최신 점수 상태를 즉시 계산하여 최종 결과 도출
+            // 📌 [버그 수정 완료] 리액트 State 비동기 딜레이 우회를 위해 객체를 즉시 직접 빌드
             const finalScores = {
                 ...scores,
                 tags: extraTags.length > 0 ? [...scores.tags, ...extraTags] : scores.tags,
@@ -70,7 +86,7 @@ function Test() {
                 finalScores[type] = { ...scores[type], [value]: scores[type][value] + 1 };
             }
 
-            // 📌 [핵심 수정] 마지막 순간에 MPTI 알파벳 조합 생성
+            // 최종 매칭 알파벳 연산
             const { weight: w, decision: d, interaction: i, focus: f } = finalScores;
             const weight = w.L > w.H ? "L" : "H";
             const decision = d.I > d.A ? "I" : "A";
@@ -78,6 +94,7 @@ function Test() {
             const focus = f.T > f.S ? "T" : "S";
             const finalResult = `${weight}${decision}${interaction}${focus}`.trim();
 
+            // 통계 데이터 파이어베이스 전송
             const saveStatistics = async () => {
                 try {
                     const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
@@ -102,16 +119,10 @@ function Test() {
                 }
             };
 
-            // 데이터 저장을 비동기로 실행하면서 화면을 즉시 이동시킵니다. (UX 손맛 유지)
             saveStatistics();
-
-            // 쿼리 파라미터(?c=) 뒤에 finalResult를 안전하게 매립하여 이동
             navigate(`/result?c=${finalResult}`, { state: { scores: finalScores } });
         }
     };
-
-    const trackLength = 10;
-    const currentPosition = Math.floor((currentIndex / shuffledQuestions.length) * trackLength);
 
     return (
         <div
@@ -126,7 +137,7 @@ function Test() {
         >
             <div style={{ maxWidth: "500px", width: "100%", marginTop: "20px" }}>
                 <div style={{ width: "100%", marginBottom: "35px" }}>
-                    {/* 상단 퀘스트 카운터 스테이터스 */}
+                    {/* 상단 카운터 정보 */}
                     <div
                         style={{
                             display: "flex",
@@ -144,7 +155,7 @@ function Test() {
                         </span>
                     </div>
 
-                    {/* 실제 말판 트랙 메인 카드 */}
+                    {/* 게이지 트랙 레일 */}
                     <div
                         style={{
                             position: "relative",
@@ -155,28 +166,26 @@ function Test() {
                             boxShadow: "4px 4px 0px #111",
                             display: "flex",
                             alignItems: "center",
-                            overflow: "visible", // 말이 위로 살짝 튀어나오도록 노출
+                            overflow: "visible",
                         }}
                     >
-                        {/* 진행도에 따라 나무판이나 매트가 차오르는 느낌의 내부 바 */}
                         <div
                             style={{
                                 width: `${(currentIndex / (shuffledQuestions.length - 1)) * 100}%`,
                                 height: "100%",
-                                backgroundColor: "#f1c40f", // 매력적인 골드 게이지색
-                                transition: "width 0.25s ease-out", // 부드러운 애니메이션 효과
+                                backgroundColor: "#f1c40f",
+                                transition: "width 0.25s ease-out",
                             }}
                         />
 
-                        {/* 실시간으로 전진하는 미플 말 (♟️) */}
+                        {/* 미플 말 컴포넌트 */}
                         <div
                             style={{
                                 position: "absolute",
-                                // 말의 중심축을 맞추기 위해 비율 계산 후 패딩 보정
                                 left: `calc(${(currentIndex / (shuffledQuestions.length - 1)) * 100}% - 14px)`,
                                 top: "-12px",
                                 fontSize: "1.6rem",
-                                transition: "left 0.25s ease-out", // 말 이동도 부드럽게 쇽!
+                                transition: "left 0.25s ease-out",
                                 zIndex: 2,
                                 cursor: "default",
                                 userSelect: "none",
@@ -185,7 +194,6 @@ function Test() {
                             ♟️
                         </div>
 
-                        {/* 우측 끝 고정 골인 지점 텍스트 */}
                         <span
                             style={{
                                 position: "absolute",
@@ -202,7 +210,7 @@ function Test() {
                     </div>
                 </div>
 
-                {/* 퀘스트 카드 영역 */}
+                {/* 메인 스테이지 질문 카드 */}
                 <div
                     style={{
                         backgroundColor: "#fff",
@@ -243,7 +251,7 @@ function Test() {
                     </h2>
                 </div>
 
-                {/* 선택지 (카드 드로우 느낌) */}
+                {/* 선택 버튼 컴포넌트 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "15px", width: "100%" }}>
                     {currentQuestion.options.map((option, index) => (
                         <button
@@ -279,6 +287,26 @@ function Test() {
                         </button>
                     ))}
                 </div>
+
+                {/* ↩️ 모바일 터치 최적화 뒤로 가기 트리거 */}
+                {currentIndex > 0 && (
+                    <div style={{ display: "flex", marginTop: "10px" }}>
+                        <div
+                            onClick={handleBack}
+                            style={{
+                                padding: "10px",
+                                fontSize: "1.4rem",
+                                cursor: "pointer",
+                                userSelect: "none",
+                                transition: "transform 0.1s",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                        >
+                            ↩️
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
