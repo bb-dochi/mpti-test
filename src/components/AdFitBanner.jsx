@@ -5,7 +5,6 @@ function AdFitBanner() {
     const scriptAdded = useRef(false);
 
     useEffect(() => {
-        // 중복 로드 방지
         if (scriptAdded.current) return;
 
         try {
@@ -31,7 +30,6 @@ function AdFitBanner() {
                 overflow: "hidden",
             }}
         >
-            {/* 📌 JSX 문법에 맞게 className과 style 구조 완벽 수정 */}
             <ins className="kakao_ad_area" style={{ display: "none" }} data-ad-unit="DAN-MDzE36ZOSW6WLDSc" data-ad-width="300" data-ad-height="250"></ins>
         </div>
     );

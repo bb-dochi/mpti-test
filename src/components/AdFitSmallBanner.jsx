@@ -30,7 +30,6 @@ function AdFitSmallBanner() {
                 overflow: "hidden",
             }}
         >
-            {/* 📌 className과 객체 형태의 style로 완벽 변환 완료! */}
             <ins className="kakao_ad_area" style={{ display: "none" }} data-ad-unit="DAN-LhQXES8sjqGOPV1H" data-ad-width="320" data-ad-height="50"></ins>
         </div>
     );

@@ -139,19 +139,42 @@ function Test() {
         >
             <div style={{ maxWidth: "500px", width: "100%", marginTop: "20px" }}>
                 <div style={{ width: "100%", marginBottom: "35px" }}>
-                    {/* 상단 카운터 정보 */}
+                    {/* 📌 상단 레이아웃 변경: 왼쪽엔 뒤로가기, 오른쪽엔 진행도 숫자가 양 날개처럼 배치됨 */}
                     <div
                         style={{
                             display: "flex",
-                            justifyContent: "flex-end",
+                            justifyContent: "space-between", // 양끝 정렬로 밸런스 유지
+                            alignItems: "center",
                             marginBottom: "8px",
                             fontFamily: "'Maplestory-Light', sans-serif",
                             fontSize: "0.95rem",
                             fontWeight: "bold",
                             color: "#111",
                             padding: "0 4px",
+                            minHeight: "28px", // 뒤로가기가 사라져도 높이가 유지되어 들썩거림 방지
                         }}
                     >
+                        {/* 👈 좌측 상단 콤팩트한 뒤로가기 아이콘 (첫 질문 땐 안 보임) */}
+                        {currentIndex > 0 ? (
+                            <div
+                                onClick={handleBack}
+                                style={{
+                                    fontSize: "1.2rem",
+                                    cursor: "pointer",
+                                    userSelect: "none",
+                                    transition: "transform 0.1s",
+                                    padding: "2px 8px",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                            >
+                                ⬅️
+                            </div>
+                        ) : (
+                            <div />
+                        )}
+
+                        {/* 👉 우측 상단 진행도 스테이터스 */}
                         <span>
                             {currentIndex + 1} / {shuffledQuestions.length}
                         </span>
@@ -254,7 +277,7 @@ function Test() {
                 </div>
 
                 {/* 선택 버튼 컴포넌트 */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "15px", width: "100%" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "15px", width: "100%", marginBottom: "25px" }}>
                     {currentQuestion.options.map((option, index) => (
                         <button
                             key={index}
@@ -290,24 +313,8 @@ function Test() {
                     ))}
                 </div>
 
-                {currentIndex > 0 && (
-                    <div style={{ display: "flex", marginTop: "10px" }}>
-                        <div
-                            onClick={handleBack}
-                            style={{
-                                padding: "10px",
-                                fontSize: "1.4rem",
-                                cursor: "pointer",
-                                userSelect: "none",
-                                transition: "transform 0.1s",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
-                        >
-                            ↩️
-                        </div>
-                    </div>
-                )}
+                {/* 📌 광고 배너가 깔끔하게 최하단 베이스라인을 잡아줌 */}
+                <AdFitSmallBanner key="static-test-ad-banner" />
             </div>
         </div>
     );
