@@ -1,10 +1,9 @@
-import AdFitBanner from "../components/AdFitBanner";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { characters } from "../data/characters";
-
 import { doc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
+import AdFitBanner from "../components/AdFitBanner";
 
 function Result() {
     const location = useLocation();
@@ -17,11 +16,9 @@ function Result() {
 
     const scores = location.state?.scores;
 
-    // 1. 진입 경로 분기 (공유 링크 진입 vs 일반 테스트 완료 진입)
     useEffect(() => {
         const charIdFromUrl = searchParams.get("c");
 
-        // 상황 A: 공유 링크(?c=MPTI네글자)로 직접 접속했거나 주소창에 이미 박혀있는 경우
         if (charIdFromUrl) {
             const cleanId = charIdFromUrl.trim().toUpperCase();
             const foundCharacter = characters[cleanId];
@@ -33,7 +30,6 @@ function Result() {
             }
         }
 
-        // 상황 B: 일반 테스트 프로세스를 거쳐 정상 진입했을 때 (만약 파라미터가 누락되었을 때의 백업)
         if (scores) {
             const { weight: w, decision: d, interaction: i, focus: f } = scores;
             const weight = w.L > w.H ? "L" : "H";
@@ -75,7 +71,6 @@ function Result() {
     const shareUrl = `${window.location.origin}/result?c=${finalResult}`;
     const shareTitle = "MPTI - 보드게임 성향 테스트";
     const shareText = `나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
-
     const imageUrl = `${window.location.origin}/images/${finalResult}.png`;
 
     const incrementShareCount = async () => {
@@ -88,31 +83,23 @@ function Result() {
         }
     };
 
-    // 테스트 메인 링크 복사 기능 (언제나 메인 주소만 깔끔하게 복사)
     const handleCopyMainLink = async () => {
         try {
             await navigator.clipboard.writeText(window.location.origin);
-            alert("테스트 메인 주소가 클립보드에 복사되었습니다! 친구들에게 추천해 보세요.");
             await incrementShareCount();
         } catch (error) {
-            alert("링크 복사에 실패했습니다.");
-        }
-    };
-
-    const handleCopyResultLink = async () => {
-        try {
-            await navigator.clipboard.writeText(shareUrl);
-            alert("결과 페이지 링크가 클립보드에 복사되었습니다!");
-            await incrementShareCount();
-        } catch (error) {
-            alert("링크 복사에 실패했습니다.");
+            console.error(error);
         }
     };
 
     const handleShareResult = async () => {
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+        } catch (error) {
+            console.error(error);
+        }
 
-        if (isMobile && typeof window.Kakao !== "undefined" && window.Kakao.isInitialized()) {
+        if (typeof window.Kakao !== "undefined" && window.Kakao.isInitialized()) {
             try {
                 window.Kakao.Share.sendDefault({
                     objectType: "feed",
@@ -130,18 +117,15 @@ function Result() {
                     ],
                 });
                 await incrementShareCount();
-                return;
             } catch (error) {
                 console.error(error);
             }
         }
-        handleCopyResultLink();
     };
 
     const parseMatchData = (text) => {
         if (!text) return { id: "unknown", name: "?", desc: "" };
 
-        // \s* 를 활용해 콤마 뒤에 띄어쓰기가 있든 없든 다 잡아내도록 설계
         const match = text.match(/^([a-zA-Z]{4})\s*\(([^)]+)\)\s*,\s*(.*)$/);
 
         if (match) {
@@ -152,7 +136,6 @@ function Result() {
             };
         }
 
-        // 안전장치(Fallback)
         const parts = text.split(",");
         return {
             id: "unknown",
@@ -180,7 +163,6 @@ function Result() {
                 boxSizing: "border-box",
             }}
         >
-            {/* 캐릭터 카드 UI */}
             <div
                 style={{
                     backgroundColor: "#fff",
@@ -193,7 +175,6 @@ function Result() {
                     marginBottom: "20px",
                 }}
             >
-                {/* 상단 MPTI 뱃지 */}
                 <div
                     style={{
                         position: "absolute",
@@ -230,7 +211,6 @@ function Result() {
                     {character.name}
                 </h1>
 
-                {/* 미플 일러스트 영역 */}
                 <div
                     style={{
                         width: "300px",
@@ -260,7 +240,6 @@ function Result() {
                     </span>
                 </div>
 
-                {/* 획득 칭호 */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px", justifyContent: "center" }}>
                     {displayTags
                         .filter((tag) => tag && tag.trim() !== "")
@@ -284,7 +263,6 @@ function Result() {
 
                 <div style={{ height: "3px", backgroundColor: "#111", margin: "20px 0", borderBottom: "2px dashed #ccc" }}></div>
 
-                {/* 스킬 및 설명 */}
                 <div style={{ marginBottom: "20px" }}>
                     <strong
                         style={{
@@ -321,9 +299,7 @@ function Result() {
                     <p style={{ margin: 0, lineHeight: "1.6", fontWeight: "bold", color: "#333", fontSize: "0.95rem" }}>{character.description}</p>
                 </div>
 
-                {/* 궁합 영역 (좌우 유지 + 이미지 네모 상자 꽉 채우기) */}
                 <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-                    {/* 🟢 찰떡 파티원 */}
                     <div
                         style={{
                             flex: 1,
@@ -338,7 +314,6 @@ function Result() {
                     >
                         <span style={{ fontWeight: "900", color: "#27ae60", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>🟢 찰떡 파티원</span>
 
-                        {/* 네모난 미니 카드 상자 */}
                         <div
                             style={{
                                 width: "85px",
@@ -346,7 +321,7 @@ function Result() {
                                 backgroundColor: "#fff",
                                 border: "2px solid #111",
                                 borderRadius: "6px",
-                                overflow: "hidden", // 넘치는 이미지 컷팅
+                                overflow: "hidden",
                                 display: "flex",
                                 justifyContent: "center",
                                 alignItems: "center",
@@ -360,7 +335,7 @@ function Result() {
                                 style={{
                                     width: "100%",
                                     height: "100%",
-                                    objectFit: "cover", // 📌 비율 유지하며 빈틈없이 네모 박스 꽉 채우기 (잘림 허용)
+                                    objectFit: "cover",
                                 }}
                                 onError={(e) => {
                                     e.target.style.display = "none";
@@ -377,7 +352,6 @@ function Result() {
                         <p style={{ margin: 0, fontSize: "0.75rem", color: "#444", lineHeight: "1.35", wordBreak: "keep-all" }}>{good.desc}</p>
                     </div>
 
-                    {/* 🔴 상극 파티원 */}
                     <div
                         style={{
                             flex: 1,
@@ -392,7 +366,6 @@ function Result() {
                     >
                         <span style={{ fontWeight: "900", color: "#c0392b", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>🔴 상극 파티원</span>
 
-                        {/* 네모난 미니 카드 상자 */}
                         <div
                             style={{
                                 width: "85px",
@@ -400,7 +373,7 @@ function Result() {
                                 backgroundColor: "#fff",
                                 border: "2px solid #111",
                                 borderRadius: "6px",
-                                overflow: "hidden", // 넘치는 이미지 컷팅
+                                overflow: "hidden",
                                 display: "flex",
                                 justifyContent: "center",
                                 alignItems: "center",
@@ -414,7 +387,7 @@ function Result() {
                                 style={{
                                     width: "100%",
                                     height: "100%",
-                                    objectFit: "cover", // 📌 비율 유지하며 빈틈없이 네모 박스 꽉 채우기 (잘림 허용)
+                                    objectFit: "cover",
                                 }}
                                 onError={(e) => {
                                     e.target.style.display = "none";
@@ -432,7 +405,7 @@ function Result() {
                     </div>
                 </div>
             </div>
-            {/* 📜 [추가] 과하지 않고 힙한 감성의 전체 도감보기 텍스트 인디케이터 링크 */}
+
             <div
                 onClick={() => navigate("/all")}
                 style={{
@@ -441,7 +414,7 @@ function Result() {
                     color: "#fff",
                     textDecoration: "underline",
                     cursor: "pointer",
-                    marginBottom: "25px", // 아래 공유하기 버튼과의 간격 조정
+                    marginBottom: "25px",
                     fontFamily: "'Maplestory-Light', sans-serif",
                     textShadow: "1px 1px 0px #111",
                     letterSpacing: "0.5px",
@@ -451,7 +424,7 @@ function Result() {
             >
                 [ 📜 모든 유형 살펴보기 ]
             </div>
-            {/* 버튼 1: 결과 공유하기 */}
+
             <button
                 onClick={handleShareResult}
                 style={{
@@ -465,13 +438,12 @@ function Result() {
                     border: "4px solid #111",
                     boxShadow: "4px 4px 0px #111",
                     cursor: "pointer",
-                    fontFamily: "inherit",
+                    fontFamily: "'Maplestory-Light', sans-serif",
                 }}
             >
-                결과 공유하기 🔗
+                카카오톡으로 결과 공유하기 🔗
             </button>
 
-            {/* 버튼 2: 테스트 링크 복사 (홈페이지 메인 카피) */}
             <button
                 onClick={handleCopyMainLink}
                 style={{
@@ -485,14 +457,13 @@ function Result() {
                     border: "4px solid #111",
                     boxShadow: "4px 4px 0px #111",
                     cursor: "pointer",
-                    fontFamily: "inherit",
+                    fontFamily: "'Maplestory-Light', sans-serif",
                     marginTop: "12px",
                 }}
             >
                 테스트 링크 복사 📋
             </button>
 
-            {/* 버튼 3: 다시 테스트하기 */}
             <button
                 onClick={() => navigate("/")}
                 style={{
@@ -523,6 +494,7 @@ function Result() {
             >
                 다시 테스트하기 🔄
             </button>
+
             <AdFitBanner />
         </div>
     );
