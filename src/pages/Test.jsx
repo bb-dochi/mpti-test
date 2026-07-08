@@ -139,39 +139,59 @@ function Test() {
         >
             <div style={{ maxWidth: "500px", width: "100%", marginTop: "20px" }}>
                 <div style={{ width: "100%", marginBottom: "35px" }}>
-                    {/* 📌 상단 레이아웃 변경: 왼쪽엔 뒤로가기, 오른쪽엔 진행도 숫자가 양 날개처럼 배치됨 */}
+                    {/* 상단 레이아웃: 왼쪽엔 미니 정사각 ◀ 버튼, 오른쪽엔 진행도 숫자 */}
                     <div
                         style={{
                             display: "flex",
-                            justifyContent: "space-between", // 양끝 정렬로 밸런스 유지
+                            justifyContent: "space-between",
                             alignItems: "center",
-                            marginBottom: "8px",
+                            marginBottom: "12px",
                             fontFamily: "'Maplestory-Light', sans-serif",
                             fontSize: "0.95rem",
                             fontWeight: "bold",
                             color: "#111",
                             padding: "0 4px",
-                            minHeight: "28px", // 뒤로가기가 사라져도 높이가 유지되어 들썩거림 방지
+                            minHeight: "48px", // 정사각 버튼 높이에 맞춰 여유 있게 조정
                         }}
                     >
-                        {/* 👈 좌측 상단 콤팩트한 뒤로가기 아이콘 (첫 질문 땐 안 보임) */}
+                        {/* 👈 좌측 상단: 선택지 버튼과 테마가 같은 완벽한 정사각 미니 버튼 */}
                         {currentIndex > 0 ? (
-                            <div
+                            <button
                                 onClick={handleBack}
                                 style={{
-                                    fontSize: "1.2rem",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    width: "30px", // 📌 가로 40px 고정
+                                    height: "30px", // 📌 세로 40px 고정 (완벽한 정사각형)
                                     cursor: "pointer",
-                                    userSelect: "none",
-                                    transition: "transform 0.1s",
-                                    padding: "2px 8px",
+                                    border: "3px solid #111",
+                                    backgroundColor: "#fff",
+                                    boxShadow: "2px 2px 0px #111",
+                                    transition: "all 0.1s",
+                                    padding: 0,
+                                    boxSizing: "border-box", // 테두리가 늘어나 정사각이 깨지는 것 방지
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15)")}
-                                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1.0)")}
+                                onMouseDown={(e) => {
+                                    e.currentTarget.style.transform = "translate(2px, 2px)";
+                                    e.currentTarget.style.boxShadow = "0px 0px 0px #111";
+                                }}
+                                onMouseUp={(e) => {
+                                    e.currentTarget.style.transform = "translate(0px, 0px)";
+                                    e.currentTarget.style.boxShadow = "2px 2px 0px #111";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = "translate(0px, 0px)";
+                                    e.currentTarget.style.boxShadow = "2px 2px 0px #111";
+                                }}
                             >
-                                ⬅️
-                            </div>
+                                {/* 정사각 박스에 예쁘게 안착하도록 패딩 밸런스 맞춘 삼각형 SVG */}
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="#111" style={{ marginRight: "1px" }}>
+                                    <path d="M20 22V2L4 12L20 22Z" />
+                                </svg>
+                            </button>
                         ) : (
-                            <div />
+                            <div style={{ width: "40px", height: "40px" }} />
                         )}
 
                         {/* 👉 우측 상단 진행도 스테이터스 */}
@@ -179,7 +199,6 @@ function Test() {
                             {currentIndex + 1} / {shuffledQuestions.length}
                         </span>
                     </div>
-
                     {/* 게이지 트랙 레일 */}
                     <div
                         style={{
