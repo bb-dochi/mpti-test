@@ -1,4 +1,3 @@
-import AdFitBanner from "../components/AdFitBanner";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { characters } from "../data/characters";
@@ -171,7 +170,6 @@ function AllTypes() {
                 >
                     홈으로 가기 🏠
                 </button>
-                <AdFitBanner />
             </div>
 
             {/* 🛑 [이스터에그] 4대 성향 지표 팝업창 모달 (모바일 창 잘림 완벽 패치 버전) */}

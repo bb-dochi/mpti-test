@@ -4,8 +4,6 @@ import { questions } from "../data/questions";
 import { doc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
 
-import AdFitSmallBanner from "../components/AdFitSmallBanner";
-
 function Test() {
     const navigate = useNavigate();
 
@@ -331,9 +329,6 @@ function Test() {
                         </button>
                     ))}
                 </div>
-
-                {/* 📌 광고 배너가 깔끔하게 최하단 베이스라인을 잡아줌 */}
-                <AdFitSmallBanner key="static-test-ad-banner" />
             </div>
         </div>
     );

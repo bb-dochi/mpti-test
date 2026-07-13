@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { characters } from "../data/characters";
 import { doc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
-import AdFitBanner from "../components/AdFitBanner";
 
 function Result() {
     const location = useLocation();
@@ -494,8 +493,6 @@ function Result() {
             >
                 다시 테스트하기 🔄
             </button>
-
-            <AdFitBanner />
         </div>
     );
 }
