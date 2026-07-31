@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { questions } from "../data/questions";
 import { doc, setDoc, increment } from "firebase/firestore";
@@ -19,6 +19,8 @@ function Test() {
     });
 
     const [history, setHistory] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const submissionLock = useRef(false);
 
     const handleBack = () => {
         if (currentIndex === 0) return;
@@ -50,7 +52,9 @@ function Test() {
 
     const currentQuestion = shuffledQuestions[currentIndex];
 
-    const handleOptionClick = (type, value, optionIndex) => {
+    const handleOptionClick = async (type, value) => {
+        if (submissionLock.current) return;
+
         // 점수판이 바뀌기 직전 상태를 히스토리에 누적 (뒤로가기용)
         setHistory((prev) => [...prev, scores]);
 
@@ -74,6 +78,9 @@ function Test() {
         if (currentIndex < shuffledQuestions.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
+            submissionLock.current = true;
+            setIsSubmitting(true);
+
             // 📌 [버그 수정 완료] 리액트 State 비동기 딜레이 우회를 위해 객체를 즉시 직접 빌드
             const finalScores = {
                 ...scores,
@@ -119,7 +126,7 @@ function Test() {
                 }
             };
 
-            saveStatistics();
+            await saveStatistics();
             navigate(`/result?c=${finalResult}`, { state: { scores: finalScores } });
         }
     };
@@ -298,11 +305,12 @@ function Test() {
                     {currentQuestion.options.map((option, index) => (
                         <button
                             key={index}
-                            onClick={() => handleOptionClick(currentQuestion.type, option.value, index)}
+                            onClick={() => handleOptionClick(currentQuestion.type, option.value)}
+                            disabled={isSubmitting}
                             style={{
                                 padding: "20px",
                                 fontSize: "1.0rem",
-                                cursor: "pointer",
+                                cursor: isSubmitting ? "wait" : "pointer",
                                 border: "3px solid #111",
                                 backgroundColor: "#fff",
                                 textAlign: "left",
@@ -311,6 +319,7 @@ function Test() {
                                 boxShadow: "4px 4px 0px #111",
                                 transition: "all 0.1s",
                                 lineHeight: "1.4",
+                                opacity: isSubmitting ? 0.65 : 1,
                             }}
                             onMouseDown={(e) => {
                                 e.currentTarget.style.transform = "translate(4px, 4px)";
