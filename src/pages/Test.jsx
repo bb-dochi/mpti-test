@@ -1,13 +1,26 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { questions } from "../data/questions";
-import { doc, setDoc, increment } from "firebase/firestore";
+import { collection, doc, increment, serverTimestamp, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
+import { getResponseCollectionName, getStatisticsDocumentName, TEST_VERSION } from "../data/testVersion";
+
+const createQuestionOrder = () => {
+    const normalQuestions = questions.filter((q) => q.type !== "tag");
+    const tagQuestions = questions.filter((q) => q.type === "tag");
+
+    for (let i = normalQuestions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [normalQuestions[i], normalQuestions[j]] = [normalQuestions[j], normalQuestions[i]];
+    }
+
+    return [...normalQuestions, ...tagQuestions];
+};
 
 function Test() {
     const navigate = useNavigate();
 
-    const [shuffledQuestions, setShuffledQuestions] = useState([]);
+    const [shuffledQuestions] = useState(createQuestionOrder);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const [scores, setScores] = useState({
@@ -19,6 +32,7 @@ function Test() {
     });
 
     const [history, setHistory] = useState([]);
+    const [responses, setResponses] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const submissionLock = useRef(false);
 
@@ -28,27 +42,11 @@ function Test() {
         setCurrentIndex((prev) => prev - 1);
 
         // 뒤로 가기 시 직전 타임라인의 점수 스냅샷을 완벽히 복원
-        const previousScores = history[history.length - 1];
-        setScores(previousScores);
+        const previousState = history[history.length - 1];
+        setScores(previousState.scores);
+        setResponses(previousState.responses);
         setHistory((prev) => prev.slice(0, -1));
     };
-
-    useEffect(() => {
-        const normalQuestions = questions.filter((q) => q.type !== "tag");
-        const tagQuestions = questions.filter((q) => q.type === "tag");
-
-        const shuffledNormal = [...normalQuestions];
-        for (let i = shuffledNormal.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledNormal[i], shuffledNormal[j]] = [shuffledNormal[j], shuffledNormal[i]];
-        }
-
-        setShuffledQuestions([...shuffledNormal, ...tagQuestions]);
-    }, []);
-
-    if (shuffledQuestions.length === 0) {
-        return <div style={{ textAlign: "center", marginTop: "50px", fontWeight: "bold" }}>[SYSTEM] 퀘스트 카드를 섞는 중...</div>;
-    }
 
     const currentQuestion = shuffledQuestions[currentIndex];
 
@@ -56,7 +54,15 @@ function Test() {
         if (submissionLock.current) return;
 
         // 점수판이 바뀌기 직전 상태를 히스토리에 누적 (뒤로가기용)
-        setHistory((prev) => [...prev, scores]);
+        setHistory((prev) => [...prev, { scores, responses }]);
+
+        const selectedResponse = {
+            questionId: currentQuestion.id,
+            type,
+            value,
+        };
+        const nextResponses = [...responses, selectedResponse];
+        setResponses(nextResponses);
 
         let extraTags = [];
 
@@ -104,22 +110,40 @@ function Test() {
             // 통계 데이터 파이어베이스 전송
             const saveStatistics = async () => {
                 try {
-                    const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
+                    const docName = getStatisticsDocumentName();
                     const statsRef = doc(db, "statistics", docName);
+                    const responseRef = doc(collection(db, getResponseCollectionName()));
+                    const batch = writeBatch(db);
                     const updateData = {
+                        version: TEST_VERSION,
                         totalTesters: increment(1),
-                        [`types.${finalResult}`]: increment(1),
+                        types: { [finalResult]: increment(1) },
                     };
 
                     if (finalScores.tags && finalScores.tags.length > 0) {
+                        updateData.extraQuestions = {};
                         finalScores.tags.forEach((tag) => {
                             if (tag) {
-                                updateData[`extraQuestions.${tag}`] = increment(1);
+                                updateData.extraQuestions[tag] = increment(1);
                             }
                         });
                     }
 
-                    await setDoc(statsRef, updateData, { merge: true });
+                    batch.set(statsRef, updateData, { merge: true });
+                    batch.set(responseRef, {
+                        version: TEST_VERSION,
+                        result: finalResult,
+                        scores: {
+                            weight: finalScores.weight,
+                            decision: finalScores.decision,
+                            interaction: finalScores.interaction,
+                            focus: finalScores.focus,
+                        },
+                        answers: nextResponses,
+                        tags: finalScores.tags.filter(Boolean),
+                        completedAt: serverTimestamp(),
+                    });
+                    await batch.commit();
                     console.log(`🔥 [${docName}] 테스트 완료 시점에 최초 1회 저장 성공!`);
                 } catch (error) {
                     console.error("파이어베이스 저장 에러:", error);
@@ -127,7 +151,8 @@ function Test() {
             };
 
             await saveStatistics();
-            navigate(`/result?c=${finalResult}`, { state: { scores: finalScores } });
+            const axisScores = [w.L, w.H, d.I, d.A, i.P, i.C, f.T, f.S].join("-");
+            navigate(`/result?c=${finalResult}&s=${axisScores}`, { state: { scores: finalScores } });
         }
     };
 

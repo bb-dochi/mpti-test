@@ -3,22 +3,41 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { characters } from "../data/characters";
 import { doc, getDoc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
+import { getStatisticsDocumentName } from "../data/testVersion";
+
+const parseAxisScores = (encodedScores) => {
+    if (!/^\d+-\d+-\d+-\d+-\d+-\d+-\d+-\d+$/.test(encodedScores || "")) return null;
+    const [L, H, I, A, P, C, T, S] = encodedScores.split("-").map(Number);
+    const pairs = [[L, H], [I, A], [P, C], [T, S]];
+    if (pairs.some(([left, right]) => left + right !== 5)) return null;
+    return { weight: { L, H }, decision: { I, A }, interaction: { P, C }, focus: { T, S } };
+};
 
 function Result() {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const [character, setCharacter] = useState(null);
-    const [finalResult, setFinalResult] = useState("");
-    const [displayTags, setDisplayTags] = useState([]);
     const [typePercentage, setTypePercentage] = useState(null);
     const [notice, setNotice] = useState("");
     const noticeTimer = useRef(null);
 
-    const scores = location.state?.scores;
+    const scores = location.state?.scores || parseAxisScores(searchParams.get("s"));
     const requestedResult = searchParams.get("c")?.trim().toUpperCase();
     const hasInvalidResult = Boolean(requestedResult && !characters[requestedResult]);
+    const calculatedResult = scores
+        ? `${scores.weight.L > scores.weight.H ? "L" : "H"}${scores.decision.I > scores.decision.A ? "I" : "A"}${scores.interaction.P > scores.interaction.C ? "P" : "C"}${scores.focus.T > scores.focus.S ? "T" : "S"}`
+        : "";
+    const finalResult = requestedResult && characters[requestedResult] ? requestedResult : calculatedResult;
+    const character = characters[finalResult] || (finalResult ? {
+        mpti: finalResult,
+        name: "미등록 미플",
+        passive: "데이터 없음",
+        description: "로직 오류 혹은 데이터 누락",
+        goodMatch: "?",
+        badMatch: "?",
+    } : null);
+    const displayTags = location.state?.scores?.tags || [];
 
     const showNotice = (message) => {
         setNotice(message);
@@ -31,50 +50,13 @@ function Result() {
     }, []);
 
     useEffect(() => {
-        const charIdFromUrl = searchParams.get("c");
-
-        if (charIdFromUrl) {
-            const cleanId = charIdFromUrl.trim().toUpperCase();
-            const foundCharacter = characters[cleanId];
-            if (foundCharacter) {
-                setCharacter(foundCharacter);
-                setFinalResult(cleanId);
-                setDisplayTags(scores?.tags || []);
-                return;
-            }
-        }
-
-        if (scores) {
-            const { weight: w, decision: d, interaction: i, focus: f } = scores;
-            const weight = w.L > w.H ? "L" : "H";
-            const decision = d.I > d.A ? "I" : "A";
-            const interaction = i.P > i.C ? "P" : "C";
-            const focus = f.T > f.S ? "T" : "S";
-            const calculatedResult = `${weight}${decision}${interaction}${focus}`.trim();
-
-            const matchedCharacter = characters[calculatedResult] || {
-                mpti: calculatedResult,
-                name: "미등록 미플",
-                passive: "데이터 없음",
-                description: "로직 오류 혹은 데이터 누락",
-                goodMatch: "?",
-                badMatch: "?",
-            };
-
-            setCharacter(matchedCharacter);
-            setFinalResult(calculatedResult);
-            setDisplayTags(scores.tags || []);
-        }
-    }, [scores, searchParams]);
-
-    useEffect(() => {
         if (!finalResult) return;
 
         let isActive = true;
 
         const loadTypePercentage = async () => {
             try {
-                const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
+                const docName = getStatisticsDocumentName();
                 const statsSnapshot = await getDoc(doc(db, "statistics", docName));
 
                 if (!statsSnapshot.exists()) return;
@@ -147,14 +129,28 @@ function Result() {
         return <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "'Maplestory-Light', sans-serif", fontWeight: "bold" }}>[SYSTEM] 보드게임 성향 결과 로드 중...</div>;
     }
 
-    const shareUrl = `${window.location.origin}/result?c=${finalResult}`;
+    const axisRows = scores
+        ? [
+              { name: "LH", left: "L", leftLabel: "가벼움", right: "H", rightLabel: "묵직함", leftScore: scores.weight.L, rightScore: scores.weight.H },
+              { name: "IA", left: "I", leftLabel: "직관", right: "A", rightLabel: "분석", leftScore: scores.decision.I, rightScore: scores.decision.A },
+              { name: "CP", left: "C", leftLabel: "상호작용", right: "P", rightLabel: "개인 전략", leftScore: scores.interaction.C, rightScore: scores.interaction.P },
+              { name: "TS", left: "T", leftLabel: "테마", right: "S", rightLabel: "시스템", leftScore: scores.focus.T, rightScore: scores.focus.S },
+          ].map((axis) => ({
+              ...axis,
+              leftPercentage: Math.round((axis.leftScore / (axis.leftScore + axis.rightScore)) * 100),
+          }))
+        : [];
+    const visibleTags = displayTags.filter((tag) => tag && tag.trim() !== "");
+
+    const scoreQuery = searchParams.get("s");
+    const shareUrl = `${window.location.origin}/result?c=${finalResult}${scoreQuery ? `&s=${scoreQuery}` : ""}`;
     const shareTitle = "MPTI - 보드게임 성향 테스트";
     const shareText = `나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
     const imageUrl = `${window.location.origin}/images/${finalResult}.png`;
 
     const incrementShareCount = async () => {
         try {
-            const docName = import.meta.env.DEV ? "mpti_stats_dev" : "mpti_stats";
+            const docName = getStatisticsDocumentName();
             const statsRef = doc(db, "statistics", docName);
             await setDoc(statsRef, { shareCount: increment(1) }, { merge: true });
         } catch (error) {
@@ -273,11 +269,11 @@ function Result() {
             <div
                 style={{
                     backgroundColor: "#fff",
-                    border: "6px solid #111",
+                    border: "4px solid #111",
                     padding: "30px",
                     maxWidth: "450px",
                     width: "100%",
-                    boxShadow: "10px 10px 0px rgba(0,0,0,0.8)",
+                    boxShadow: "7px 7px 0px rgba(0,0,0,0.78)",
                     position: "relative",
                     marginBottom: "20px",
                 }}
@@ -322,7 +318,7 @@ function Result() {
                     style={{
                         width: "300px",
                         height: "400px",
-                        backgroundColor: "#e9e9e9",
+                        backgroundColor: "#f6f6f6",
                         border: "4px dashed #111",
                         margin: "0 auto 20px auto",
                         display: "flex",
@@ -347,44 +343,53 @@ function Result() {
                     </span>
                 </div>
 
-                {typePercentage !== null && (
-                    <p
-                        style={{
-                            margin: "-6px 0 18px",
-                            color: "#666",
-                            fontSize: "0.78rem",
-                            fontWeight: "bold",
-                            textAlign: "center",
-                            fontFamily: "'Maplestory-Light', sans-serif",
-                            wordBreak: "keep-all",
-                        }}
+                {(axisRows.length > 0 || visibleTags.length > 0 || typePercentage !== null) && (
+                    <section
+                        aria-label="나의 성향 분석"
+                        style={{ margin: "0 0 26px", padding: "18px", borderRadius: "10px", backgroundColor: "#f4f1ea" }}
                     >
-                        전체 테스트 결과 중 <span style={{ color: "#27ae60" }}>{typePercentage}%</span>가 {finalResult} 유형이에요!
-                    </p>
+                        <h2 style={{ margin: "0 0 14px", fontSize: "1rem", textAlign: "center", fontFamily: "'Maplestory-Light', sans-serif" }}>나의 성향 분석</h2>
+                        <div style={{ display: "grid", gap: "10px", fontFamily: "'Spoqa Han Sans Neo', sans-serif" }}>
+                            {axisRows.map((axis) => {
+                                const rightPercentage = 100 - axis.leftPercentage;
+                                return (
+                                    <div key={axis.name}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", marginBottom: "4px", fontSize: "0.76rem", fontWeight: "bold" }}>
+                                            <span>{axis.left} · {axis.leftLabel}</span>
+                                            <span style={{ textAlign: "right" }}>{axis.rightLabel} · {axis.right}</span>
+                                        </div>
+                                        <div style={{ display: "flex", height: "18px", border: "2px solid #111", backgroundColor: "#fff", overflow: "hidden" }}>
+                                            <div style={{ width: `${axis.leftPercentage}%`, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#f1c40f", fontSize: "0.67rem", fontWeight: "900" }}>
+                                                {axis.leftPercentage > 0 ? `${axis.leftPercentage}%` : ""}
+                                            </div>
+                                            <div style={{ width: `${rightPercentage}%`, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#2ecc71", fontSize: "0.67rem", fontWeight: "900" }}>
+                                                {rightPercentage > 0 ? `${rightPercentage}%` : ""}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {visibleTags.length > 0 && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: axisRows.length > 0 ? "15px" : 0, paddingTop: axisRows.length > 0 ? "13px" : 0, borderTop: axisRows.length > 0 ? "2px dashed #bbb" : "none", justifyContent: "center" }}>
+                                {visibleTags.map((tag, index) => (
+                                    <span key={index} style={{ backgroundColor: "#111", color: "#fff", padding: "4px 9px", border: "2px solid #111", fontWeight: "bold", fontSize: "0.75rem", fontFamily: "'Maplestory-Light', sans-serif" }}>
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        {typePercentage !== null && (
+                            <p style={{ margin: "13px 0 0", paddingTop: "11px", borderTop: "2px dashed #bbb", color: "#666", fontSize: "0.72rem", fontWeight: "bold", textAlign: "center", fontFamily: "'Maplestory-Light', sans-serif", wordBreak: "keep-all" }}>
+                                전체 참여자의 <span style={{ color: "#27ae60" }}>{typePercentage}%</span>가 {finalResult} 유형이에요
+                            </p>
+                        )}
+                    </section>
                 )}
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px", justifyContent: "center" }}>
-                    {displayTags
-                        .filter((tag) => tag && tag.trim() !== "")
-                        .map((tag, index) => (
-                            <span
-                                key={index}
-                                style={{
-                                    backgroundColor: "#111",
-                                    color: "#fff",
-                                    padding: "6px 12px",
-                                    border: "2px solid #111",
-                                    fontWeight: "bold",
-                                    fontSize: "0.9rem",
-                                    fontFamily: "'Maplestory-Light', sans-serif",
-                                }}
-                            >
-                                {tag}
-                            </span>
-                        ))}
-                </div>
-
-                <div style={{ height: "3px", backgroundColor: "#111", margin: "20px 0", borderBottom: "2px dashed #ccc" }}></div>
+                <div style={{ height: 0, borderTop: "3px dashed #111", margin: "28px 0 24px" }}></div>
 
                 <div style={{ marginBottom: "20px" }}>
                     <strong
@@ -426,19 +431,18 @@ function Result() {
                     <div
                         style={{
                             marginBottom: "25px",
-                            padding: "14px",
+                            padding: "16px 16px 16px 18px",
                             backgroundColor: "#fff6cc",
-                            border: "3px solid #111",
-                            boxShadow: "4px 4px 0px #111",
+                            border: "none",
+                            borderLeft: "5px solid #f1c40f",
+                            borderRadius: "0 8px 8px 0",
                         }}
                     >
                         <strong
                             style={{
                                 display: "inline-block",
-                                backgroundColor: "#f1c40f",
                                 color: "#111",
-                                padding: "4px 8px",
-                                border: "2px solid #111",
+                                padding: 0,
                                 marginBottom: "8px",
                                 fontSize: "0.9rem",
                                 fontFamily: "'Maplestory-Light', sans-serif",
@@ -465,9 +469,10 @@ function Result() {
                     <div
                         style={{
                             flex: 1,
-                            backgroundColor: "#f4f1ea",
-                            border: "3px solid #111",
-                            padding: "12px 8px",
+                            backgroundColor: "#eef9f2",
+                            border: "none",
+                            borderRadius: "10px",
+                            padding: "16px 10px",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
@@ -517,9 +522,10 @@ function Result() {
                     <div
                         style={{
                             flex: 1,
-                            backgroundColor: "#f4f1ea",
-                            border: "3px solid #111",
-                            padding: "12px 8px",
+                            backgroundColor: "#fff1ef",
+                            border: "none",
+                            borderRadius: "10px",
+                            padding: "16px 10px",
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",

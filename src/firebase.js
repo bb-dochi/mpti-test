@@ -1,6 +1,6 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,4 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // 데이터베이스(Firestore) 인스턴스 가져오기 및 내보내기
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+});
