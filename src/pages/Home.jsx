@@ -1,7 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import { homeCopy } from "../data/localization";
+import { useLanguage } from "../components/LanguageContext";
 
 function Home() {
     const navigate = useNavigate();
+    const { language } = useLanguage();
+    const copy = homeCopy[language];
 
     return (
         <div
@@ -47,9 +51,7 @@ function Home() {
                         lineHeight: "1.2",
                     }}
                 >
-                    당신은 어떤
-                    <br />
-                    미플인가요?
+                    {copy.title}
                 </h1>
 
                 <p
@@ -66,7 +68,7 @@ function Home() {
 
                 {/* 픽셀 게임 시작 버튼 */}
                 <button
-                    onClick={() => navigate("/test")}
+                    onClick={() => navigate(`/test?lang=${language}`)}
                     style={{
                         backgroundColor: "#e74c3c",
                         color: "#fff",

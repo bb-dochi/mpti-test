@@ -1,11 +1,11 @@
+@import url("https://spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css");
+
 @font-face {
     font-family: "Maplestory-Light";
     src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/MaplestoryOTFLight.woff") format("woff");
     font-weight: normal;
     font-style: normal;
 }
-
-@import url("https://spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css");
 
 body {
     margin: 0;

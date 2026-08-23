@@ -1,9 +1,11 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { questions } from "../data/questions";
-import { collection, doc, increment, serverTimestamp, writeBatch } from "firebase/firestore";
+import { localizeQuestion } from "../data/localization";
+import { useLanguage } from "../components/LanguageContext";
+import { doc, increment, writeBatch } from "firebase/firestore";
 import { db } from "../firebase";
-import { getResponseCollectionName, getStatisticsDocumentName, TEST_VERSION } from "../data/testVersion";
+import { getStatisticsDocumentName } from "../data/testVersion";
 
 const createQuestionOrder = () => {
     const normalQuestions = questions.filter((q) => q.type !== "tag");
@@ -19,6 +21,7 @@ const createQuestionOrder = () => {
 
 function Test() {
     const navigate = useNavigate();
+    const { language } = useLanguage();
 
     const [shuffledQuestions] = useState(createQuestionOrder);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -49,8 +52,9 @@ function Test() {
     };
 
     const currentQuestion = shuffledQuestions[currentIndex];
+    const displayedQuestion = localizeQuestion(currentQuestion, language);
 
-    const handleOptionClick = async (type, value) => {
+    const handleOptionClick = async (type, value, optionIndex) => {
         if (submissionLock.current) return;
 
         // 점수판이 바뀌기 직전 상태를 히스토리에 누적 (뒤로가기용)
@@ -60,6 +64,7 @@ function Test() {
             questionId: currentQuestion.id,
             type,
             value,
+            optionIndex,
         };
         const nextResponses = [...responses, selectedResponse];
         setResponses(nextResponses);
@@ -112,37 +117,29 @@ function Test() {
                 try {
                     const docName = getStatisticsDocumentName();
                     const statsRef = doc(db, "statistics", docName);
-                    const responseRef = doc(collection(db, getResponseCollectionName()));
                     const batch = writeBatch(db);
                     const updateData = {
-                        version: TEST_VERSION,
                         totalTesters: increment(1),
-                        types: { [finalResult]: increment(1) },
+                        [`types.${finalResult}`]: increment(1),
                     };
 
                     if (finalScores.tags && finalScores.tags.length > 0) {
-                        updateData.extraQuestions = {};
                         finalScores.tags.forEach((tag) => {
                             if (tag) {
-                                updateData.extraQuestions[tag] = increment(1);
+                                updateData[`extraQuestions.${tag}`] = increment(1);
                             }
                         });
                     }
 
-                    batch.set(statsRef, updateData, { merge: true });
-                    batch.set(responseRef, {
-                        version: TEST_VERSION,
-                        result: finalResult,
-                        scores: {
-                            weight: finalScores.weight,
-                            decision: finalScores.decision,
-                            interaction: finalScores.interaction,
-                            focus: finalScores.focus,
-                        },
-                        answers: nextResponses,
-                        tags: finalScores.tags.filter(Boolean),
-                        completedAt: serverTimestamp(),
+
+                    updateData.questionAnswers = {};
+                    nextResponses.filter(({ type }) => type !== "tag").forEach(({ questionId, optionIndex: selectedOptionIndex }) => {
+                        updateData.questionAnswers[`q${questionId}`] = {
+                            [`option${selectedOptionIndex + 1}`]: increment(1),
+                        };
                     });
+                    batch.set(statsRef, updateData, { merge: true });
+
                     await batch.commit();
                     console.log(`🔥 [${docName}] 테스트 완료 시점에 최초 1회 저장 성공!`);
                 } catch (error) {
@@ -152,7 +149,7 @@ function Test() {
 
             await saveStatistics();
             const axisScores = [w.L, w.H, d.I, d.A, i.P, i.C, f.T, f.S].join("-");
-            navigate(`/result?c=${finalResult}&s=${axisScores}`, { state: { scores: finalScores } });
+            navigate(`/result?c=${finalResult}&s=${axisScores}&lang=${language}`, { state: { scores: finalScores } });
         }
     };
 
@@ -321,16 +318,16 @@ function Test() {
                             fontFamily: "inherit",
                         }}
                     >
-                        {currentQuestion.question}
+                        {displayedQuestion.question}
                     </h2>
                 </div>
 
                 {/* 선택 버튼 컴포넌트 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "15px", width: "100%", marginBottom: "25px" }}>
-                    {currentQuestion.options.map((option, index) => (
+                    {displayedQuestion.options.map((option, index) => (
                         <button
                             key={index}
-                            onClick={() => handleOptionClick(currentQuestion.type, option.value)}
+                            onClick={() => handleOptionClick(currentQuestion.type, option.value, index)}
                             disabled={isSubmitting}
                             style={{
                                 padding: "20px",

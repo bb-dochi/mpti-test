@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { characters } from "../data/characters";
+import { englishCharacters, resultCopy } from "../data/resultLocalization";
+import { useLanguage } from "../components/LanguageContext";
+import { localizeTag } from "../data/localization";
 import { doc, getDoc, setDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
 import { getStatisticsDocumentName } from "../data/testVersion";
@@ -17,6 +20,9 @@ function Result() {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { language } = useLanguage();
+    const copy = resultCopy[language];
+    const localizedCharacters = language === "en" ? englishCharacters : characters;
 
     const [typePercentage, setTypePercentage] = useState(null);
     const [notice, setNotice] = useState("");
@@ -24,16 +30,16 @@ function Result() {
 
     const scores = location.state?.scores || parseAxisScores(searchParams.get("s"));
     const requestedResult = searchParams.get("c")?.trim().toUpperCase();
-    const hasInvalidResult = Boolean(requestedResult && !characters[requestedResult]);
+    const hasInvalidResult = Boolean(requestedResult && !localizedCharacters[requestedResult]);
     const calculatedResult = scores
         ? `${scores.weight.L > scores.weight.H ? "L" : "H"}${scores.decision.I > scores.decision.A ? "I" : "A"}${scores.interaction.P > scores.interaction.C ? "P" : "C"}${scores.focus.T > scores.focus.S ? "T" : "S"}`
         : "";
-    const finalResult = requestedResult && characters[requestedResult] ? requestedResult : calculatedResult;
-    const character = characters[finalResult] || (finalResult ? {
+    const finalResult = requestedResult && localizedCharacters[requestedResult] ? requestedResult : calculatedResult;
+    const character = localizedCharacters[finalResult] || (finalResult ? {
         mpti: finalResult,
-        name: "미등록 미플",
-        passive: "데이터 없음",
-        description: "로직 오류 혹은 데이터 누락",
+        name: copy.unknown,
+        passive: copy.noData,
+        description: copy.missing,
         goodMatch: "?",
         badMatch: "?",
     } : null);
@@ -101,13 +107,13 @@ function Result() {
             >
                 <div style={{ maxWidth: "420px", padding: "30px", backgroundColor: "#fff", border: "5px solid #111", boxShadow: "8px 8px 0px #111" }}>
                     <p style={{ margin: "0 0 22px", color: "#333", fontSize: "1.05rem", fontWeight: "bold", lineHeight: 1.6, wordBreak: "keep-all" }}>
-                        존재하지 않는 결과 유형이에요.<br />홈으로 돌아가 테스트를 다시 시작해 주세요!
+                        {copy.invalid}
                     </p>
                     <button
                         onClick={() => navigate("/")}
                         style={{ padding: "12px 28px", border: "4px solid #111", backgroundColor: "#f1c40f", boxShadow: "4px 4px 0px #111", fontFamily: "inherit", fontSize: "1rem", fontWeight: "bold", cursor: "pointer" }}
                     >
-                        홈으로 돌아가기
+                        {copy.home}
                     </button>
                 </div>
             </div>
@@ -117,35 +123,34 @@ function Result() {
     if (!character && !scores && !searchParams.get("c")) {
         return (
             <div style={{ textAlign: "center", marginTop: "50px" }}>
-                <p style={{ fontWeight: "bold" }}>[ERROR] 데이터를 불러올 수 없습니다.</p>
+                <p style={{ fontWeight: "bold" }}>{copy.error}</p>
                 <button onClick={() => navigate("/")} style={{ padding: "10px 20px", cursor: "pointer", border: "3px solid #111", fontWeight: "bold" }}>
-                    메인으로 복귀
+                    {copy.back}
                 </button>
             </div>
         );
     }
 
     if (!character) {
-        return <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "'Maplestory-Light', sans-serif", fontWeight: "bold" }}>[SYSTEM] 보드게임 성향 결과 로드 중...</div>;
+        return <div style={{ textAlign: "center", marginTop: "50px", fontFamily: "'Maplestory-Light', sans-serif", fontWeight: "bold" }}>{copy.loading}</div>;
     }
-
     const axisRows = scores
         ? [
-              { name: "LH", left: "L", leftLabel: "가벼움", right: "H", rightLabel: "묵직함", leftScore: scores.weight.L, rightScore: scores.weight.H },
-              { name: "IA", left: "I", leftLabel: "직관", right: "A", rightLabel: "분석", leftScore: scores.decision.I, rightScore: scores.decision.A },
-              { name: "CP", left: "C", leftLabel: "상호작용", right: "P", rightLabel: "개인 전략", leftScore: scores.interaction.C, rightScore: scores.interaction.P },
-              { name: "TS", left: "T", leftLabel: "테마", right: "S", rightLabel: "시스템", leftScore: scores.focus.T, rightScore: scores.focus.S },
+              { name: "LH", left: "L", leftLabel: copy.axes[0][0], right: "H", rightLabel: copy.axes[0][1], leftScore: scores.weight.L, rightScore: scores.weight.H },
+              { name: "IA", left: "I", leftLabel: copy.axes[1][0], right: "A", rightLabel: copy.axes[1][1], leftScore: scores.decision.I, rightScore: scores.decision.A },
+              { name: "CP", left: "C", leftLabel: copy.axes[2][0], right: "P", rightLabel: copy.axes[2][1], leftScore: scores.interaction.C, rightScore: scores.interaction.P },
+              { name: "TS", left: "T", leftLabel: copy.axes[3][0], right: "S", rightLabel: copy.axes[3][1], leftScore: scores.focus.T, rightScore: scores.focus.S },
           ].map((axis) => ({
               ...axis,
               leftPercentage: Math.round((axis.leftScore / (axis.leftScore + axis.rightScore)) * 100),
           }))
         : [];
-    const visibleTags = displayTags.filter((tag) => tag && tag.trim() !== "");
+    const visibleTags = displayTags.filter((tag) => tag && tag.trim() !== "").map((tag) => localizeTag(tag, language));
 
     const scoreQuery = searchParams.get("s");
-    const shareUrl = `${window.location.origin}/result?c=${finalResult}${scoreQuery ? `&s=${scoreQuery}` : ""}`;
-    const shareTitle = "MPTI - 보드게임 성향 테스트";
-    const shareText = `나의 보드게임 자아는 '${character.name}'입니다. 당신의 성향도 분석해 보세요!`;
+    const shareUrl = `${window.location.origin}/result?c=${finalResult}${scoreQuery ? `&s=${scoreQuery}` : ""}&lang=${language}`;
+    const shareTitle = copy.shareTitle;
+    const shareText = copy.shareText(character.name);
     const imageUrl = `${window.location.origin}/images/${finalResult}.png`;
 
     const incrementShareCount = async () => {
@@ -161,7 +166,7 @@ function Result() {
     const handleCopyMainLink = async () => {
         try {
             await navigator.clipboard.writeText(window.location.origin);
-            showNotice("테스트 링크를 복사했어요!");
+            showNotice(copy.testCopied);
             await incrementShareCount();
         } catch (error) {
             console.error(error);
@@ -171,7 +176,7 @@ function Result() {
     const handleShareResult = async () => {
         try {
             await navigator.clipboard.writeText(shareUrl);
-            showNotice("결과 링크를 복사했어요!");
+            showNotice(copy.resultCopied);
         } catch (error) {
             console.error(error);
         }
@@ -188,7 +193,7 @@ function Result() {
                     },
                     buttons: [
                         {
-                            title: "결과 확인하기 ♟️",
+                            title: copy.shareButton,
                             link: { mobileWebUrl: shareUrl, webUrl: shareUrl },
                         },
                     ],
@@ -203,7 +208,7 @@ function Result() {
     const parseMatchData = (text) => {
         if (!text) return { id: "unknown", name: "?", desc: "" };
 
-        const match = text.match(/^([a-zA-Z]{4})\s*\(([^)]+)\)\s*,\s*(.*)$/);
+        const match = text.match(/^([a-zA-Z]{4})\s*\(([^)]+)\)\s*(?:,|—|-)\s*(.*)$/);
 
         if (match) {
             return {
@@ -339,16 +344,36 @@ function Result() {
                         }}
                     />
                     <span className="placeholder-text" style={{ color: "#555", fontWeight: "bold", display: "none" }}>
-                        ♟️ [ {finalResult} 일러스트 준비 중 ]
+                        {copy.pending(finalResult)}
                     </span>
                 </div>
 
-                {(axisRows.length > 0 || visibleTags.length > 0 || typePercentage !== null) && (
-                    <section
-                        aria-label="나의 성향 분석"
-                        style={{ margin: "0 0 26px", padding: "18px", borderRadius: "10px", backgroundColor: "#f4f1ea" }}
+                {typePercentage !== null && (
+                    <p
+                        style={{
+                            margin: "-6px 0 18px",
+                            color: "#666",
+                            fontSize: "0.78rem",
+                            fontWeight: "bold",
+                            textAlign: "center",
+                            fontFamily: "'Maplestory-Light', sans-serif",
+                            wordBreak: "keep-all",
+                        }}
                     >
-                        <h2 style={{ margin: "0 0 14px", fontSize: "1rem", textAlign: "center", fontFamily: "'Maplestory-Light', sans-serif" }}>나의 성향 분석</h2>
+                        {language === "kr" ? (
+                            <>전체 테스트 결과 중 <span style={{ color: "#27ae60" }}>{typePercentage}%</span>가 {finalResult} 유형이에요!</>
+                        ) : (
+                            <><span style={{ color: "#27ae60" }}>{typePercentage}%</span> of all test results are {finalResult}!</>
+                        )}
+                    </p>
+                )}
+
+                {axisRows.length > 0 && (
+                    <section
+                        aria-label={copy.analysis}
+                        style={{ margin: "0 0 18px", padding: "18px", borderRadius: "10px", backgroundColor: "#eef8ee" }}
+                    >
+                        <h2 style={{ margin: "0 0 14px", fontSize: "1rem", textAlign: "center", fontFamily: "'Maplestory-Light', sans-serif" }}>{copy.analysis}</h2>
                         <div style={{ display: "grid", gap: "10px", fontFamily: "'Spoqa Han Sans Neo', sans-serif" }}>
                             {axisRows.map((axis) => {
                                 const rightPercentage = 100 - axis.leftPercentage;
@@ -370,9 +395,8 @@ function Result() {
                                 );
                             })}
                         </div>
-
                         {visibleTags.length > 0 && (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: axisRows.length > 0 ? "15px" : 0, paddingTop: axisRows.length > 0 ? "13px" : 0, borderTop: axisRows.length > 0 ? "2px dashed #bbb" : "none", justifyContent: "center" }}>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "15px", justifyContent: "center" }}>
                                 {visibleTags.map((tag, index) => (
                                     <span key={index} style={{ backgroundColor: "#111", color: "#fff", padding: "4px 9px", border: "2px solid #111", fontWeight: "bold", fontSize: "0.75rem", fontFamily: "'Maplestory-Light', sans-serif" }}>
                                         {tag}
@@ -380,16 +404,10 @@ function Result() {
                                 ))}
                             </div>
                         )}
-
-                        {typePercentage !== null && (
-                            <p style={{ margin: "13px 0 0", paddingTop: "11px", borderTop: "2px dashed #bbb", color: "#666", fontSize: "0.72rem", fontWeight: "bold", textAlign: "center", fontFamily: "'Maplestory-Light', sans-serif", wordBreak: "keep-all" }}>
-                                전체 참여자의 <span style={{ color: "#27ae60" }}>{typePercentage}%</span>가 {finalResult} 유형이에요
-                            </p>
-                        )}
                     </section>
                 )}
+                <div style={{ height: 0, margin: "18px 0 22px", borderTop: "1px dashed rgba(17, 17, 17, 0.28)" }}></div>
 
-                <div style={{ height: 0, borderTop: "3px dashed #111", margin: "28px 0 24px" }}></div>
 
                 <div style={{ marginBottom: "20px" }}>
                     <strong
@@ -404,7 +422,7 @@ function Result() {
                             fontFamily: "'Maplestory-Light', sans-serif",
                         }}
                     >
-                        ▶ 패시브 스킬
+                        {copy.passive}
                     </strong>
                     <p style={{ margin: 0, lineHeight: "1.6", fontWeight: "bold", color: "#333", fontSize: "0.95rem" }}>{character.passive}</p>
                 </div>
@@ -422,7 +440,7 @@ function Result() {
                             fontFamily: "'Maplestory-Light', sans-serif",
                         }}
                     >
-                        ▶ 플레이 스타일
+                        {copy.style}
                     </strong>
                     <p style={{ margin: 0, lineHeight: "1.6", fontWeight: "bold", color: "#333", fontSize: "0.95rem" }}>{character.description}</p>
                 </div>
@@ -448,7 +466,7 @@ function Result() {
                                 fontFamily: "'Maplestory-Light', sans-serif",
                             }}
                         >
-                            🎲 추천 게임
+                            {copy.games}
                         </strong>
                         <p
                             style={{
@@ -479,7 +497,7 @@ function Result() {
                             textAlign: "center",
                         }}
                     >
-                        <span style={{ fontWeight: "900", color: "#27ae60", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>🟢 찰떡 파티원</span>
+                        <span style={{ fontWeight: "900", color: "#27ae60", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>{copy.good}</span>
 
                         <div
                             style={{
@@ -532,7 +550,7 @@ function Result() {
                             textAlign: "center",
                         }}
                     >
-                        <span style={{ fontWeight: "900", color: "#c0392b", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>🔴 상극 파티원</span>
+                        <span style={{ fontWeight: "900", color: "#c0392b", marginBottom: "8px", fontSize: "0.9rem", fontFamily: "'Maplestory-Light', sans-serif" }}>{copy.bad}</span>
 
                         <div
                             style={{
@@ -590,7 +608,7 @@ function Result() {
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#f1c40f")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#fff")}
             >
-                [ 📜 모든 유형 살펴보기 ]
+                {copy.all}
             </div>
 
             <button
@@ -609,7 +627,7 @@ function Result() {
                     fontFamily: "'Maplestory-Light', sans-serif",
                 }}
             >
-                카카오톡으로 결과 공유하기 🔗
+                {copy.share}
             </button>
 
             <button
@@ -629,7 +647,7 @@ function Result() {
                     marginTop: "12px",
                 }}
             >
-                테스트 링크 복사 📋
+                {copy.copy}
             </button>
 
             <button
@@ -660,7 +678,7 @@ function Result() {
                     e.currentTarget.style.boxShadow = "6px 6px 0px #111";
                 }}
             >
-                다시 테스트하기 🔄
+                {copy.retry}
             </button>
         </div>
     );

@@ -1,15 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { characters } from "../data/characters";
+import { englishCharacters } from "../data/resultLocalization";
+import { useLanguage } from "../components/LanguageContext";
 
+
+const pageCopy = {
+    kr: { title: "📜 보드게이머(미플) 유형 도감", home: "홈으로 가기 🏠", guideTitle: "📖 지표 가이드", close: "닫기", guide: [
+        ["① 웨이트 (Weight) : 게임의 무게감 & 피로도", ["[L]ight: 빠르고 직관적인 게임", "[H]eavy: 깊은 전략과 유기적인 시스템"], "#e74c3c"],
+        ["② 의사결정 (Decision) : 턴을 풀어가는 방식", ["[I]ntuitive: 직관적 판단과 즉흥적 대응", "[A]nalytical: 분석, 최적화, 장기 계획"], "#2ecc71"],
+        ["③ 인터랙션 (Interaction) : 플레이어 간 상호작용", ["[P]eaceful: 개인 전략과 낮은 충돌", "[C]onflict: 직접 경쟁, 심리전, 영향력 전투"], "#3498db"],
+        ["④ 취향 및 테마 (Taste) : 재미를 느끼는 핵심 요소", ["[T]heme: 세계관, 서사, 감성", "[S]ystem: 정교한 메커니즘과 기믹"], "#9b59b6"],
+    ] },
+    en: { title: "📜 Board Gamer Type Guide", home: "Back to Home 🏠", guideTitle: "📖 Trait Guide", close: "Close", guide: [
+        ["① Weight: Complexity & Mental Load", ["[L]ight: quick, intuitive games", "[H]eavy: deep strategy and interconnected systems"], "#e74c3c"],
+        ["② Decision: How You Plan a Turn", ["[I]ntuitive: instinct and flexible reactions", "[A]nalytical: optimization and long-term plans"], "#2ecc71"],
+        ["③ Interaction: How Players Affect One Another", ["[P]eaceful: personal strategy with less conflict", "[C]onflict: competition and mind games"], "#3498db"],
+        ["④ Taste: What Makes a Game Fun", ["[T]heme: worlds, stories, and atmosphere", "[S]ystem: refined mechanisms and clever design"], "#9b59b6"],
+    ] },
+};
 function AllTypes() {
     const navigate = useNavigate();
+    const { language } = useLanguage();
+    const copy = pageCopy[language];
     const [showGuide, setShowGuide] = useState(false);
 
     // 16개 캐릭터 데이터 배열로 변환
     const characterList = Object.keys(characters).map((key) => ({
         id: key,
-        ...characters[key],
+        ...(language === "en" ? englishCharacters[key] : characters[key]),
     }));
 
     return (
@@ -54,7 +73,7 @@ function AllTypes() {
                             textAlign: "center",
                         }}
                     >
-                        📜 보드게이머(미플) 유형 도감
+                        {copy.title}
                     </h1>
                     <button
                         onClick={() => setShowGuide(true)}
@@ -168,7 +187,7 @@ function AllTypes() {
                         fontFamily: "'Maplestory-Light', sans-serif",
                     }}
                 >
-                    홈으로 가기 🏠
+                    {copy.home}
                 </button>
             </div>
 
@@ -215,40 +234,19 @@ function AllTypes() {
                                 fontFamily: "'Maplestory-Light', sans-serif",
                             }}
                         >
-                            📖 지표 가이드
+                            {copy.guideTitle}
                         </h2>
 
                         <div style={{ display: "flex", flexDirection: "column", gap: "15px", fontSize: "0.85rem", lineHeight: "1.5" }}>
-                            <div>
-                                <strong style={{ fontSize: "0.95rem", color: "#e74c3c" }}>① 웨이트 (Weight) : 게임의 무게감 & 피로도</strong>
-                                <p style={{ margin: "4px 0 0 0", color: "#333", wordBreak: "keep-all" }}>
-                                    • <strong>[L]ight:</strong> 가벼운 파티게임, 빠른 템포, 직관적 규칙, 콤팩트한 세팅 선호
-                                    <br />• <strong>[H]eavy:</strong> 깊은 전략, 유기적 시스템, 묵직한 두뇌 플레이 선호
-                                </p>
-                            </div>
-                            <div style={{ borderTop: "2px dashed #ccc", paddingTop: "10px" }}>
-                                <strong style={{ fontSize: "0.95rem", color: "#2ecc71" }}>② 의사결정 (Decision) : 턴을 풀어가는 방식</strong>
-                                <p style={{ margin: "4px 0 0 0", color: "#333", wordBreak: "keep-all" }}>
-                                    • <strong>[I]ntuitive:</strong> 직관적 판단, 즉흥적 대응, 운 요소를 즐김, 장고 싫어함
-                                    <br />• <strong>[A]nalytical:</strong> 분석과 최적화, 장기 플랜, 수읽기와 깊은 고민 선호
-                                </p>
-                            </div>
-                            <div style={{ borderTop: "2px dashed #ccc", paddingTop: "10px" }}>
-                                <strong style={{ fontSize: "0.95rem", color: "#3498db" }}>③ 인터랙션 (Interaction) : 플레이어 간 상호작용</strong>
-                                <p style={{ margin: "4px 0 0 0", color: "#333", wordBreak: "keep-all" }}>
-                                    • <strong>[P]eaceful:</strong> 각자도생, 내 테크 트리 완성, 심한 경쟁 비선호
-                                    <br />• <strong>[C]onflict:</strong> 직접 충돌, 심리전, 영향력 전투 선호
-                                </p>
-                            </div>
-                            <div style={{ borderTop: "2px dashed #ccc", paddingTop: "10px" }}>
-                                <strong style={{ fontSize: "0.95rem", color: "#9b59b6" }}>④ 취향 및 테마 (Taste) : 재미를 느끼는 핵심 요소</strong>
-                                <p style={{ margin: "4px 0 0 0", color: "#333", wordBreak: "keep-all" }}>
-                                    • <strong>[T]heme:</strong> 세계관 몰입, 스토리텔링, 컴포넌트의 감성 중시, 의도 중요
-                                    <br />• <strong>[S]system:</strong> 정교한 메커니즘, 기믹의 완성도, 추상전략 선호
-                                </p>
-                            </div>
+                            {copy.guide.map(([title, description, color], index) => (
+                                <div key={title} style={index > 0 ? { borderTop: "2px dashed #ccc", paddingTop: "10px" } : undefined}>
+                                    <strong style={{ fontSize: "0.95rem", color }}>{title}</strong>
+                                    <div style={{ margin: "4px 0 0", color: "#333", wordBreak: "keep-all" }}>
+                                        {description.map((line) => <div key={line}>• {line}</div>)}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-
                         <button
                             onClick={() => setShowGuide(false)}
                             style={{
@@ -266,7 +264,7 @@ function AllTypes() {
                                 fontFamily: "'Maplestory-Light', sans-serif",
                             }}
                         >
-                            닫기
+                            {copy.close}
                         </button>
                     </div>
                 </div>
