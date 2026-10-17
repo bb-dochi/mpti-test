@@ -680,6 +680,31 @@ function Result() {
             >
                 {copy.retry}
             </button>
+
+            <p
+                style={{
+                    margin: "36px 0 0",
+                    color: "#fff",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    fontFamily: "'Maplestory-Light', sans-serif",
+                    textShadow: "1px 1px 0px #111",
+                    lineHeight: 1.6,
+                    wordBreak: "keep-all",
+                }}
+            >
+                {copy.follow}
+                <br />
+                <a
+                    href="https://www.instagram.com/meeple.munse/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#f1c40f", fontSize: "1rem", textDecoration: "underline" }}
+                >
+                    📷 @meeple.munse
+                </a>
+            </p>
         </div>
     );
 }
